@@ -52,8 +52,38 @@ export class AuthService implements IAuthService {
         }
     }
 
-    signIn(userCredentials: ValidateUserDetails): Promise<string> {
-        throw new Error('Method not implemented.');
+    async signIn(userCredentials: ValidateUserDetails): Promise<{ accessToken: string }> {
+        try {
+            // Lấy thông tin người dùng từ tên người dùng
+            const user = await this.userRepository.findOne(
+                {
+                    where: { username: userCredentials.username }, 
+                    relations: ['roles'],
+                },
+            );
+
+            if (!user) {
+                throw new HttpException('Invalid Credentials', HttpStatus.UNAUTHORIZED);
+            }
+
+            // Kiểm tra mật khẩu
+            const isPasswordValid = await compareHash(
+                userCredentials.password,
+                user.password,
+            );
+
+            if (!isPasswordValid) {
+                throw new HttpException('Invalid Credentials', HttpStatus.UNAUTHORIZED);
+            }
+
+            // Tạo AccessToken
+            const { accessToken } = await this.generateAccessToken(user);
+
+            return { accessToken };
+        } catch (error) {
+            console.error('Error in signIn:', error);
+            throw new HttpException(error.message, HttpStatus.UNAUTHORIZED);
+        }
     }
 
     async validateUser(userCredentials: ValidateUserDetails) {
@@ -83,20 +113,26 @@ export class AuthService implements IAuthService {
     }
 
     async generateAccessToken(user: Partial<User>): Promise<{ accessToken: string }> {
-        const payload = {
-            sub: user.id,
-            email: user.email,
-            role: user.roles.map(role => role.name),
-        };
+        console.log(user);
+        if (user && user.roles && user.roles.length > 0) {
+            const payload = {
+                sub: user.id,
+                email: user.email,
+                role: user.roles.map(role => role.name),
+            };
 
-        const options: JwtSignOptions = {
-            secret: process.env.JWT_SECRET,
-            expiresIn: process.env.JWT_ACCESS_TOKEN_TTL,
-        };
+            const options: JwtSignOptions = {
+                secret: process.env.JWT_SECRET,
+                expiresIn: process.env.JWT_ACCESS_TOKEN_TTL,
+            };
 
-        const accessToken = await this.jwtService.signAsync(payload, options);
+            const accessToken = await this.jwtService.signAsync(payload, options);
 
-        return { accessToken };
+            return { accessToken };
+        } else {
+            // Xử lý khi user hoặc roles không tồn tại
+            throw new Error('User or user roles not available for access token generation');
+        }
     }
 
     async generateAccessTokenFromRefreshToken(refreshToken: string): Promise<{ accessToken: string }> {
