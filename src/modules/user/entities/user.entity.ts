@@ -1,18 +1,18 @@
-import { Exclude } from "class-transformer";
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, OneToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
-import { Profile } from "./user-profile.entity";
-import { UserPresence } from "./user-presence.entity";
-import { Role } from "./role.entity";
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
+import { Profile } from './user-profile.entity';
+import { UserPresence } from './user-presence.entity';
+import { Role } from './role.entity';
+import { Roles } from 'src/common/enums/roles.enum';
 
 @Entity({ name: 'users' })
 export class User {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column({ unique: true, nullable: true })
+    @Column({ unique: true, nullable: true, length: 255 })
     username: string;
 
-    @Column({ unique: true, nullable: true })
+    @Column({ unique: true, nullable: true, length: 255 })
     email: string;
 
     @Column({ unique: true, length: 20, nullable: true })

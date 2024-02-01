@@ -1,8 +1,8 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from 'typeorm';
 import { User } from './user.entity';
 import { Roles } from 'src/common/enums/roles.enum';
 
-@Entity({ name: "roles" })
+@Entity({ name: 'roles' })
 export class Role {
     @PrimaryGeneratedColumn()
     id: number;
