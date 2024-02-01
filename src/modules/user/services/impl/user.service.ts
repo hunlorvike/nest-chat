@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { IUserService } from './impl/interface-user.service';
+import { IUserService } from '../interface-user.service';
 import { FindUserOptions, FindUserParams, } from 'src/common/utils/types';
-import { User } from '../entities/user.entity';
+import { User } from '../../entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, Repository } from 'typeorm';
 

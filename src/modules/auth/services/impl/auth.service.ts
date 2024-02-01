@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { IAuthService } from '../interface-auth.service';
 import { CreateUserDetails, ValidateUserDetails } from 'src/common/utils/types';
 import { Services } from 'src/common/utils/constrants';
-import { IUserService } from 'src/modules/user/services/impl/interface-user.service';
+import { IUserService } from 'src/modules/user/services/interface-user.service';
 import { compareHash, hashPassword } from 'src/common/utils/helpers';
 import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Roles } from 'src/common/enums/roles.enum';
 import { Role } from 'src/modules/user/entities/role.entity';
 import * as jwt from 'jsonwebtoken';
+import { Messages } from 'src/common/utils/response-message';
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -28,7 +29,7 @@ export class AuthService implements IAuthService {
             });
 
             if (existingUser) {
-                throw new HttpException('User already exists', HttpStatus.CONFLICT);
+                throw new HttpException(Messages.userExists, HttpStatus.CONFLICT);
             }
 
             const newUser = this.userRepository.create(userDetails);
@@ -57,13 +58,13 @@ export class AuthService implements IAuthService {
             // Lấy thông tin người dùng từ tên người dùng
             const user = await this.userRepository.findOne(
                 {
-                    where: { username: userCredentials.username }, 
+                    where: { username: userCredentials.username },
                     relations: ['roles'],
                 },
             );
 
             if (!user) {
-                throw new HttpException('Invalid Credentials', HttpStatus.UNAUTHORIZED);
+                throw new HttpException(Messages.userNotFound, HttpStatus.UNAUTHORIZED);
             }
 
             // Kiểm tra mật khẩu
@@ -73,7 +74,7 @@ export class AuthService implements IAuthService {
             );
 
             if (!isPasswordValid) {
-                throw new HttpException('Invalid Credentials', HttpStatus.UNAUTHORIZED);
+                throw new HttpException(Messages.incorrectPassword, HttpStatus.UNAUTHORIZED);
             }
 
             // Tạo AccessToken
@@ -91,9 +92,8 @@ export class AuthService implements IAuthService {
             { username: userCredentials.username },
             { selectAll: true },
         );
-        console.log(user);
         if (!user)
-            throw new HttpException('Invalid Credentials', HttpStatus.UNAUTHORIZED);
+            throw new HttpException(Messages.userNotFound, HttpStatus.UNAUTHORIZED);
         const isPasswordValid = await compareHash(
             userCredentials.password,
             user.password,
@@ -131,7 +131,7 @@ export class AuthService implements IAuthService {
             return { accessToken };
         } else {
             // Xử lý khi user hoặc roles không tồn tại
-            throw new Error('User or user roles not available for access token generation');
+            throw new Error(Messages.userRolesNotAvailable);
         }
     }
 
@@ -144,7 +144,7 @@ export class AuthService implements IAuthService {
             const user = await this.userService.findUser({ username }, { selectAll: true });
 
             if (!user) {
-                throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+                throw new HttpException(Messages.userNotFound, HttpStatus.NOT_FOUND);
             }
 
             const { accessToken } = await this.generateAccessToken(user);
@@ -152,7 +152,7 @@ export class AuthService implements IAuthService {
             return { accessToken };
         } catch (error) {
             console.error('Error generating access token from refresh token:', error);
-            throw new HttpException('Invalid refresh token', HttpStatus.UNAUTHORIZED);
+            throw new HttpException(Messages.refreshTokenInvalid, HttpStatus.UNAUTHORIZED);
         }
     }
 
@@ -179,7 +179,7 @@ export class AuthService implements IAuthService {
             return [];
         } catch (error) {
             console.error('Error getting user roles:', error);
-            throw new Error('Could not get user roles');
+            throw new Error(Messages.userRolesError);
         }
     }
 
