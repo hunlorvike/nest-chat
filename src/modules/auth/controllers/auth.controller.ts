@@ -5,6 +5,7 @@ import { IUserService } from 'src/modules/user/services/impl/interface-user.serv
 import { CreateUserDetails } from 'src/common/utils/types';
 import { ResponseStatus } from 'src/common/enums/response-status.enum';
 import { User } from 'src/modules/user/entities/user.entity';
+import { SignUpDto } from '../dtos/sign-up.dto';
 
 @Controller(Routes.AUTH)
 export class AuthController {
@@ -14,9 +15,9 @@ export class AuthController {
     ) { }
 
     @Post('sign-up')
-    async registerUser(@Body() userDetails: CreateUserDetails) {
+    async registerUser(@Body() signUpDto: SignUpDto) {
         try {
-            const user: User = await this.authService.signUp(userDetails);
+            const user: User = await this.authService.signUp(signUpDto);
 
             return {
                 data: user,

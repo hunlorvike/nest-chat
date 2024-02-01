@@ -99,6 +99,28 @@ export class AuthService implements IAuthService {
         return { accessToken };
     }
 
+    async generateAccessTokenFromRefreshToken(refreshToken: string): Promise<{ accessToken: string }> {
+        try {
+            const decodedToken = await this.jwtService.verifyAsync(refreshToken);
+
+            const username = decodedToken.sub;
+
+            const user = await this.userService.findUser({ username }, { selectAll: true });
+
+            if (!user) {
+                throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+            }
+
+            const { accessToken } = await this.generateAccessToken(user);
+
+            return { accessToken };
+        } catch (error) {
+            console.error('Error generating access token from refresh token:', error);
+            throw new HttpException('Invalid refresh token', HttpStatus.UNAUTHORIZED);
+        }
+    }
+
+
     async validateToken(token: string): Promise<any> {
         try {
             return this.jwtService.verify(token);
