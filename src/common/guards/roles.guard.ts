@@ -1,7 +1,8 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
-import { Observable } from 'rxjs';
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -14,14 +15,14 @@ export class RolesGuard implements CanActivate {
 		const roles = this.reflector.get<string[]>('roles', context.getHandler());
 
 		if (!roles) {
-			return true; // No roles required for this handler
+			return true;
 		}
 
 		const request = context.switchToHttp().getRequest();
 		const token = request.headers.authorization;
 
 		if (!token) {
-			return false; // No token provided
+			return false;
 		}
 
 		try {
@@ -32,13 +33,13 @@ export class RolesGuard implements CanActivate {
 			});
 
 			if (!decodedToken || !decodedToken.role || !Array.isArray(decodedToken.role)) {
-				return false; // Invalid or incomplete token
+				return false;
 			}
 
 			const isExpired = Date.now() >= decodedToken.exp * 1000;
 
 			if (isExpired) {
-				return false; // Token has expired
+				return false;
 			}
 
 			const lowercaseRoles = roles.map((role) => role.toLowerCase());
@@ -47,7 +48,7 @@ export class RolesGuard implements CanActivate {
 			return lowercaseRoles.some((role) => userRoles.includes(role));
 		} catch (error) {
 			console.error(error);
-			return false; // Token error
+			return false;
 		}
 	}
 }

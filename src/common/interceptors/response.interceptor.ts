@@ -1,11 +1,11 @@
-import {
-    NestInterceptor,
-    ExecutionContext,
-    CallHandler,
-    Injectable,
-    HttpStatus,
-} from '@nestjs/common';
+import { NestInterceptor, ExecutionContext, CallHandler, Injectable, HttpStatus } from '@nestjs/common';
 import { map } from 'rxjs/operators';
+
+interface Content {
+    data?: any;
+    code?: number;
+    message?: string;
+}
 
 @Injectable()
 export class ResponseInterceptor implements NestInterceptor {
@@ -14,11 +14,11 @@ export class ResponseInterceptor implements NestInterceptor {
         next: CallHandler<any>,
     ): import('rxjs').Observable<any> | Promise<import('rxjs').Observable<any>> {
         return next.handle().pipe(
-            map(content => {
+            map((content: Content) => {
                 return {
                     data: content.data || {},
                     code: content.code || HttpStatus.OK,
-                    msg: content.msg || null,
+                    message: content.message || null,
                 };
             }),
         );

@@ -1,14 +1,9 @@
-/*
-https://docs.nestjs.com/providers#services
-*/
-
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { IUserService } from './impl/interface-user.service';
-import { CreateUserDetails, FindUserOptions, FindUserParams, ValidateUserDetails } from 'src/common/utils/types';
+import { FindUserOptions, FindUserParams, } from 'src/common/utils/types';
 import { User } from '../entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOneOptions, Repository } from 'typeorm';
-import { hashPassword } from 'src/common/utils/helpers';
 
 @Injectable()
 export class UserService implements IUserService {

@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import { Strategy, ExtractJwt } from 'passport-jwt';
 import { AuthService } from "src/modules/auth/services/impl/auth.service";
 import { PassportStrategy } from '@nestjs/passport';
+import { Configs } from "./constrants";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -12,7 +13,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     ) {
         super({
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-            secretOrKey: configService.get<string>('JWT_SECRET') || 'aLongSecretStringWhoseBitnessIsEqualToOrGreaterThanTheBitnessOfTheTokenEncryptionAlgorithm',
+            secretOrKey: configService.get<string>(Configs.JWTCONFIG) || 'aLongSecretStringWhoseBitnessIsEqualToOrGreaterThanTheBitnessOfTheTokenEncryptionAlgorithm',
         });
     }
 

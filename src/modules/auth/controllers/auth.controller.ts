@@ -21,7 +21,7 @@ export class AuthController {
             return {
                 data: user,
                 code: HttpStatus.OK,
-                msg: ResponseStatus.SUCCESSFULLY,
+                message: ResponseStatus.SUCCESSFULLY,
             };
         } catch (error) {
             if (error instanceof HttpException) {

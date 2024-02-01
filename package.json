@@ -22,7 +22,8 @@
     "migrate:generate": "node ./scripts/migrate.generate.js",
     "migrate:create": "npm run typeorm -- migration:create",
     "migrate:run": "npm run typeorm -- migration:run",
-    "migrate:revert": "npm run typeorm -- migration:revert"
+    "migrate:revert": "npm run typeorm -- migration:revert",
+    "seed:role": "ts-node -r tsconfig-paths/register ./src/database/seeders/roles.seeder.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
@@ -39,6 +40,7 @@
     "create-nestjs-middleware-module": "^0.3.1",
     "dotenv": "^16.4.1",
     "express-session": "^1.18.0",
+    "jsonwebtoken": "^9.0.2",
     "nestjs-session": "^3.0.1",
     "passport": "^0.7.0",
     "passport-http-bearer": "^1.0.1",
@@ -47,7 +49,8 @@
     "pg": "^8.11.3",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1",
-    "typeorm": "^0.3.20"
+    "typeorm": "^0.3.20",
+    "typeorm-seeding": "^1.6.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",

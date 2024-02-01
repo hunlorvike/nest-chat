@@ -1,20 +1,16 @@
-/*
-https://docs.nestjs.com/providers#services
-*/
-
 import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { IAuthService } from '../interface-auth.service';
 import { CreateUserDetails, ValidateUserDetails } from 'src/common/utils/types';
 import { Services } from 'src/common/utils/constrants';
 import { IUserService } from 'src/modules/user/services/impl/interface-user.service';
 import { compareHash, hashPassword } from 'src/common/utils/helpers';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, JwtSignOptions } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import { User } from 'src/modules/user/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Role } from 'src/modules/user/entities/role.entity';
 import { Roles } from 'src/common/enums/roles.enum';
-import { User_Role } from 'src/modules/user/entities/users-roles.entity';
+import { Role } from 'src/modules/user/entities/role.entity';
+import * as jwt from 'jsonwebtoken';
 
 @Injectable()
 export class AuthService implements IAuthService {
@@ -22,11 +18,9 @@ export class AuthService implements IAuthService {
         @Inject(Services.USER) private readonly userService: IUserService,
         private readonly jwtService: JwtService,
         @InjectRepository(User) private readonly userRepository: Repository<User>,
-        @InjectRepository(User_Role) private readonly userRoleRepository: Repository<User_Role>,
-
+        @InjectRepository(Role) private readonly roleRepository: Repository<Role>,
     ) { }
 
-    // Sign Up
     async signUp(userDetails: CreateUserDetails): Promise<User> {
         try {
             const existingUser = await this.userRepository.findOne({
@@ -37,47 +31,27 @@ export class AuthService implements IAuthService {
                 throw new HttpException('User already exists', HttpStatus.CONFLICT);
             }
 
-            const hashPassworded = await hashPassword(userDetails.password);
-            console.log(hashPassworded)
-            const newUser = this.userRepository.create({
-                ...userDetails,
-                password: hashPassworded,
-                refreshToken: null,
-                roles: [],
-            });
+            const newUser = this.userRepository.create(userDetails);
 
-            const savedUser = await this.userRepository.save(newUser);
+            const hashPassworded = await hashPassword(userDetails.password);
+            newUser.password = hashPassworded;
+
+            const userRole = await this.roleRepository.findOne({ where: { name: Roles.USER } });
+            newUser.roles = [userRole];
 
             const refreshToken = await this.generateRefreshToken(userDetails.username);
 
-            savedUser.refreshToken = refreshToken.refreshToken;
+            newUser.refreshToken = refreshToken.refreshToken;
 
-            await this.userRepository.save(savedUser);
+            await this.userRepository.save(newUser);
 
-            const userRoleMapping = this.userRoleRepository.create({
-                user: savedUser,
-                role: { name: Roles.USER },
-            });
-
-            await this.userRoleRepository.save(userRoleMapping);
-
-            return savedUser;
+            return newUser;
         } catch (error) {
             console.error('Error in signUp:', error);
             throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    async generateRefreshToken(username: string): Promise<{ refreshToken: string }> {
-        const refreshToken = await this.jwtService.signAsync({ sub: username }, {
-            expiresIn: process.env.JWT_REFRESH_TOKEN_TTL || '30d',
-            secret: process.env.JWT_SECRET || 'anotherSecretKey',
-        });
-
-        return { refreshToken };
-    }
-
-    // Sign In
     signIn(userCredentials: ValidateUserDetails): Promise<string> {
         throw new Error('Method not implemented.');
     }
@@ -98,8 +72,33 @@ export class AuthService implements IAuthService {
         return isPasswordValid ? user : null;
     }
 
+    async generateRefreshToken(username: string): Promise<{ refreshToken: string }> {
+        const options: JwtSignOptions = {
+            secret: process.env.JWT_SECRET,
+            expiresIn: process.env.JWT_REFRESH_TOKEN_TTL,
+        };
+        const refreshToken = await this.jwtService.signAsync({ sub: username }, options);
 
-    // Valid token
+        return { refreshToken };
+    }
+
+    async generateAccessToken(user: Partial<User>): Promise<{ accessToken: string }> {
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            role: user.roles.map(role => role.name),
+        };
+
+        const options: JwtSignOptions = {
+            secret: process.env.JWT_SECRET,
+            expiresIn: process.env.JWT_ACCESS_TOKEN_TTL,
+        };
+
+        const accessToken = await this.jwtService.signAsync(payload, options);
+
+        return { accessToken };
+    }
+
     async validateToken(token: string): Promise<any> {
         try {
             return this.jwtService.verify(token);
@@ -108,7 +107,6 @@ export class AuthService implements IAuthService {
         }
     }
 
-    // Get role
     async getUserRoles(userId: number): Promise<string[]> {
         try {
             const user = await this.userRepository.findOne({
