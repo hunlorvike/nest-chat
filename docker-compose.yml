@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    container_name: postgres-db-container
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user_chatapp
+      POSTGRES_PASSWORD: pass_chatapp
+      POSTGRES_DB: nestjs_chatapp
+    ports:
+      - "5454:5432" 
+    security_opt:
+      - seccomp:unconfined
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    restart: always
