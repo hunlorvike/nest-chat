@@ -22,7 +22,7 @@ dotenv.config();
     SeederService
   ]
 })
-export class AppModule { 
+export class AppModule {
   constructor(private readonly seederService: SeederService) {
     this.seedDatabase();
   }

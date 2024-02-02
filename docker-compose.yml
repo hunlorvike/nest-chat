@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: pass_chatapp
       POSTGRES_DB: nestjs_chatapp
     ports:
-      - "5454:5432" 
+      - "127.0.0.1:5454:5432"
     security_opt:
       - seccomp:unconfined
     volumes:

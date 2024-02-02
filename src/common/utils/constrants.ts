@@ -11,3 +11,8 @@ export enum Services {
 export enum Configs {
     JWTCONFIG = 'JWT_CONFIG'
 }
+
+export enum ApiTagConfigs {
+    AUTH = 'Auth',
+    USER = 'User'
+}

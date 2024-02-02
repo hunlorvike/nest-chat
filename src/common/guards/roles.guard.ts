@@ -28,7 +28,7 @@ export class RolesGuard implements CanActivate {
 		}
 
 		const request = context.switchToHttp().getRequest();
-		const token = request.headers.authorization;
+		const token = request.headers.authorization.split(' ')[1];
 
 		if (!token) {
 			return false;
@@ -47,9 +47,9 @@ export class RolesGuard implements CanActivate {
 			const isTokenExpired = Date.now() >= decodedToken.exp * 1000;
 
 			if (isTokenExpired) {
-				const userId = decodedToken.sub;
+				const username = decodedToken.sub;
 
-				const user = await this.userRepository.findOne({ where: { id: userId } });
+				const user = await this.userRepository.findOne({ where: { username: username } });
 
 				if (!user) {
 					return false;
@@ -59,15 +59,21 @@ export class RolesGuard implements CanActivate {
 
 				if (refreshToken) {
 					try {
-						// Use refreshToken to generate a new access token
 						const newToken = await this.authService.generateAccessTokenFromRefreshToken(refreshToken);
 
-						// Update the authorization header with the new token
 						if (newToken && newToken.accessToken) {
 							request.headers.authorization = `Bearer ${newToken.accessToken}`;
 
-							// Store user information in the request
-							request.headers['user'] = JSON.stringify(user);
+							const sanitizedUser = {
+								id: user?.id,
+								username: user?.username,
+								email: user?.email,
+								roles: user?.roles,
+								firstName: user?.firstName,
+								lastName: user?.lastName,
+							};
+
+							request.headers['user'] = (sanitizedUser);
 							return true;
 						}
 					} catch (refreshTokenError) {
@@ -83,8 +89,16 @@ export class RolesGuard implements CanActivate {
 
 			const user = await this.userRepository.findOne({ where: { id: decodedToken.sub } });
 
-			// Store user information in the request
-			request.headers['user'] = JSON.stringify(user);
+			const sanitizedUser = {
+				id: user?.id,
+				username: user?.username,
+				email: user?.email,
+				roles: user?.roles,
+				firstName: user?.firstName,
+				lastName: user?.lastName,
+			};
+
+			request.headers['user'] = (sanitizedUser);
 			return lowercaseRoles.some((role) => userRoles.includes(role));
 		} catch (error) {
 			console.error('Error validating token:', error);

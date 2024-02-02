@@ -76,7 +76,7 @@ export class AuthService implements IAuthService {
             if (!isPasswordValid) {
                 throw new HttpException(Messages.incorrectPassword, HttpStatus.UNAUTHORIZED);
             }
-
+            console.log(user);
             // Tạo AccessToken
             const { accessToken } = await this.generateAccessToken(user);
 
@@ -117,7 +117,7 @@ export class AuthService implements IAuthService {
         if (user && user.roles && user.roles.length > 0) {
             const payload = {
                 sub: user.id,
-                email: user.email,
+                username: user.username,
                 role: user.roles.map(role => role.name),
             };
 
