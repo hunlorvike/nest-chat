@@ -25,7 +25,7 @@ export class JwtGuard implements CanActivate {
         const token = request.headers.authorization.split(' ')[1];
 
         if (!token) {
-            throw new HttpException(Messages.tokenInvalid, HttpStatus.UNAUTHORIZED);
+            throw new HttpException(Messages.TOKEN_INVALID, HttpStatus.UNAUTHORIZED);
         }
 
         try {
@@ -34,7 +34,7 @@ export class JwtGuard implements CanActivate {
             });
 
             if (!decodedToken) {
-                throw new HttpException(Messages.tokenInvalid, HttpStatus.UNAUTHORIZED);
+                throw new HttpException(Messages.TOKEN_INVALID, HttpStatus.UNAUTHORIZED);
             }
 
             const isTokenExpired = Date.now() >= decodedToken.exp * 1000;

@@ -1,11 +1,13 @@
 export enum Routes {
     AUTH = 'auth',
-    USER = 'user'
+    USER = 'user',
+    CONVERSATION = 'conversation',
 }
 
 export enum Services {
     AUTH = 'AUTH_SERVICE',
-    USER = 'USER_SERVICE'
+    USER = 'USER_SERVICE',
+    CONVERSATION = 'CONVERSATION_SERVICE',
 }
 
 export enum Configs {
@@ -14,5 +16,6 @@ export enum Configs {
 
 export enum ApiTagConfigs {
     AUTH = 'Auth',
-    USER = 'User'
+    USER = 'User',
+    CONVERSATION = 'Conversation'
 }

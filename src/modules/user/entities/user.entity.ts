@@ -1,7 +1,10 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn, DeleteDateColumn, OneToMany } from 'typeorm';
 import { Profile } from './user-profile.entity';
 import { UserPresence } from './user-presence.entity';
 import { Role } from './role.entity';
+import { Message } from 'src/modules/message/entities/message.entity';
+import { Group } from 'src/modules/group/entities/group.entity';
+import { Peer } from './peer.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -47,6 +50,13 @@ export class User {
     })
     deletedAt?: Date;
 
+    @OneToMany(() => Message, (message) => message.author)
+    @JoinColumn()
+    messages: Message[];
+
+    @ManyToMany(() => Group, (group) => group.users)
+    groups: Group[];
+
     @OneToOne(() => Profile, { cascade: ['insert', 'update'], nullable: true })
     @JoinColumn()
     profile: Profile;
@@ -62,4 +72,11 @@ export class User {
         inverseJoinColumn: { name: 'role_id', referencedColumnName: 'id' },
     })
     roles: Role[];
+
+    @OneToOne(() => Peer, (peer) => peer.user, {
+        cascade: ['insert', 'remove', 'update'],
+    })
+    @JoinColumn()
+    peer: Peer;
+
 }

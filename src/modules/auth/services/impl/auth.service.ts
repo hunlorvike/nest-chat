@@ -29,7 +29,7 @@ export class AuthService implements IAuthService {
             });
 
             if (existingUser) {
-                throw new HttpException(Messages.userExists, HttpStatus.CONFLICT);
+                throw new HttpException(Messages.USER_EXISTS, HttpStatus.CONFLICT);
             }
 
             const newUser = this.userRepository.create(userDetails);
@@ -64,7 +64,7 @@ export class AuthService implements IAuthService {
             );
 
             if (!user) {
-                throw new HttpException(Messages.userNotFound, HttpStatus.UNAUTHORIZED);
+                throw new HttpException(Messages.USER_NOT_FOUND, HttpStatus.UNAUTHORIZED);
             }
 
             // Kiểm tra mật khẩu
@@ -74,7 +74,7 @@ export class AuthService implements IAuthService {
             );
 
             if (!isPasswordValid) {
-                throw new HttpException(Messages.incorrectPassword, HttpStatus.UNAUTHORIZED);
+                throw new HttpException(Messages.INCORRECT_PASSWORD, HttpStatus.UNAUTHORIZED);
             }
             console.log(user);
             // Tạo AccessToken
@@ -93,7 +93,7 @@ export class AuthService implements IAuthService {
             { selectAll: true },
         );
         if (!user)
-            throw new HttpException(Messages.userNotFound, HttpStatus.UNAUTHORIZED);
+            throw new HttpException(Messages.USER_NOT_FOUND, HttpStatus.UNAUTHORIZED);
         const isPasswordValid = await compareHash(
             userCredentials.password,
             user.password,
@@ -131,7 +131,7 @@ export class AuthService implements IAuthService {
             return { accessToken };
         } else {
             // Xử lý khi user hoặc roles không tồn tại
-            throw new Error(Messages.userRolesNotAvailable);
+            throw new Error(Messages.USER_ROLES_NOT_AVAILABLE);
         }
     }
 
@@ -144,7 +144,7 @@ export class AuthService implements IAuthService {
             const user = await this.userService.findUser({ username }, { selectAll: true });
 
             if (!user) {
-                throw new HttpException(Messages.userNotFound, HttpStatus.NOT_FOUND);
+                throw new HttpException(Messages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
             }
 
             const { accessToken } = await this.generateAccessToken(user);
@@ -152,7 +152,7 @@ export class AuthService implements IAuthService {
             return { accessToken };
         } catch (error) {
             console.error('Error generating access token from refresh token:', error);
-            throw new HttpException(Messages.refreshTokenInvalid, HttpStatus.UNAUTHORIZED);
+            throw new HttpException(Messages.REFRESH_TOKEN_INVALID, HttpStatus.UNAUTHORIZED);
         }
     }
 
@@ -179,7 +179,7 @@ export class AuthService implements IAuthService {
             return [];
         } catch (error) {
             console.error('Error getting user roles:', error);
-            throw new Error(Messages.userRolesError);
+            throw new Error(Messages.USER_ROLES_ERROR);
         }
     }
 
