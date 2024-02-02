@@ -1,3 +1,4 @@
+import { ConversationModule } from './modules/conversations/conversation.module';
 import { Module } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -12,6 +13,7 @@ dotenv.config();
 
 @Module({
   imports: [
+    ConversationModule,
     UserModule,
     AuthModule,
     ConfigModule.forRoot({ envFilePath: '.env' }),

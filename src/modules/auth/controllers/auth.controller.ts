@@ -1,4 +1,5 @@
-import { Body, Controller, Get, HttpException, HttpStatus, Inject, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Inject, Post, Req, Res, UseGuards } from '@nestjs/common';
+import { Request, Response } from 'express';
 import { ApiTagConfigs, Routes, Services } from 'src/common/utils/constrants';
 import { IAuthService } from '../services/interface-auth.service';
 import { IUserService } from 'src/modules/user/services/interface-user.service';
@@ -7,7 +8,7 @@ import { ResponseStatus } from 'src/common/enums/response-status.enum';
 import { User } from 'src/modules/user/entities/user.entity';
 import { SignUpDto } from '../dtos/sign-up.dto';
 import { SignInDto } from '../dtos/sign-in.dto';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiNoContentResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
 import { JwtGuard } from 'src/common/guards/jwt.guard';
 import { Roles } from 'src/common/decorators/role.decorator';
@@ -81,6 +82,37 @@ export class AuthController {
                 console.error('Error in registerUser:', error);
                 throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
             }
+        }
+    }
+
+    @UseGuards(JwtGuard)
+    @Get('status')
+    @ApiOkResponse({
+        description: 'Returns the status of the user.',
+    })
+    async getUserStatus(@GetUser() user: User) {
+        return {
+            data: user || null,
+            code: HttpStatus.OK,
+            message: ResponseStatus.SUCCESSFULLY,
+        };
+    }
+
+    @UseGuards(JwtGuard)
+    @Delete('logout')
+    @ApiNoContentResponse({
+        description: 'Successfully logs out the user.',
+    })
+    async logout(@Req() req: Request, @Res() res: Response) {
+        try {
+            res.removeHeader('Authorization');
+
+            res.removeHeader('user');
+
+            return res.status(HttpStatus.NO_CONTENT).send();
+        } catch (error) {
+            console.error('Error in logout:', error);
+            throw new HttpException('Logout failed', HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 }
