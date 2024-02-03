@@ -1,3 +1,4 @@
+import { FriendModule } from './modules/friend/friend.module';
 import { ConversationModule } from './modules/conversations/conversation.module';
 import { Module } from '@nestjs/common';
 import * as dotenv from 'dotenv';
@@ -12,12 +13,14 @@ import { Services } from './common/utils/constrants';
 import { JwtModule } from '@nestjs/jwt';
 import { User } from './modules/user/entities/user.entity';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 dotenv.config();
 
 
 @Module({
 	imports: [
+        FriendModule, 
 		ConversationModule,
 		UserModule,
 		AuthModule,
@@ -34,7 +37,7 @@ dotenv.config();
 				},
 			]
 		}),
-
+		EventEmitterModule.forRoot(),
 	],
 	providers: [
 		SeederService,

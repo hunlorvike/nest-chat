@@ -10,13 +10,14 @@ import { User } from '../user/entities/user.entity';
 import { AuthService } from '../auth/services/impl/auth.service';
 import { Conversation } from './entities/conversation.entity';
 import { Message } from '../message/entities/message.entity';
+import { FriendModule } from '../friend/friend.module';
 
 @Module({
     imports: [
         UserModule,
         JwtModule,
+        FriendModule,
         TypeOrmModule.forFeature([User, Role, Conversation, Message])
-
     ],
     controllers: [
         ConversationController
@@ -31,5 +32,11 @@ import { Message } from '../message/entities/message.entity';
             useClass: AuthService,
         },
     ],
+    exports: [
+        {
+            provide: Services.CONVERSATION,
+            useClass: ConversationService
+        },
+    ]
 })
 export class ConversationModule { }
