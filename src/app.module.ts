@@ -9,11 +9,12 @@ import { dataSourceOptions } from './database/data-source';
 import { SeederService } from './seeder-role.service';
 import { Role } from './modules/user/entities/role.entity';
 import { Services } from './common/utils/constrants';
-import { AuthService } from './modules/auth/services/impl/auth.service';
 import { JwtModule } from '@nestjs/jwt';
 import { User } from './modules/user/entities/user.entity';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 dotenv.config();
+
 
 @Module({
 	imports: [
@@ -23,10 +24,24 @@ dotenv.config();
 		ConfigModule.forRoot({ envFilePath: '.env' }),
 		TypeOrmModule.forRoot(dataSourceOptions),
 		TypeOrmModule.forFeature([User, Role]),
-		JwtModule
+		JwtModule,
+		ThrottlerModule.forRoot({
+			throttlers: [
+				{
+					name: 'global',
+					limit: 10,
+					ttl: 60,
+				},
+			]
+		}),
+
 	],
 	providers: [
 		SeederService,
+		{
+			provide: Services.THROTTLER_GUARD,
+			useClass: ThrottlerGuard
+		}
 	]
 })
 export class AppModule {

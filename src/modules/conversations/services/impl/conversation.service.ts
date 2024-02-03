@@ -7,10 +7,13 @@ import { Conversation } from '../../entities/conversation.entity';
 import { Services } from 'src/common/utils/constrants';
 import { IUserService } from 'src/modules/user/services/interface-user.service';
 import { Messages } from 'src/common/utils/response-message';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ConversationService implements IConversationService {
     constructor(
+        @InjectRepository(Conversation) private readonly conversationRepository: Repository<Conversation>,
         @Inject(Services.USER)
         private readonly userService: IUserService,
     ) { }
@@ -26,7 +29,7 @@ export class ConversationService implements IConversationService {
             throw new HttpException("Cannot create conversation with yourself", HttpStatus.CONFLICT);
         }
 
-    }   
+    }
     getConversations(user: User): Promise<Conversation[]> {
         throw new Error('Method not implemented.');
     }

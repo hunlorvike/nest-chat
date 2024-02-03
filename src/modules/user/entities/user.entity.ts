@@ -78,5 +78,4 @@ export class User {
     })
     @JoinColumn()
     peer: Peer;
-
 }

@@ -1,10 +1,5 @@
 import { User } from 'src/modules/user/entities/user.entity';
-import {
-    Column,
-    CreateDateColumn,
-    ManyToOne,
-    PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, CreateDateColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 export abstract class BaseMessage {
     @PrimaryGeneratedColumn()

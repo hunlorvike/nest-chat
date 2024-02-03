@@ -8,12 +8,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Role } from '../user/entities/role.entity';
 import { User } from '../user/entities/user.entity';
 import { AuthService } from '../auth/services/impl/auth.service';
+import { Conversation } from './entities/conversation.entity';
 
 @Module({
     imports: [
         UserModule,
         JwtModule,
-        TypeOrmModule.forFeature([User, Role])
+        TypeOrmModule.forFeature([User, Role, Conversation])
 
     ],
     controllers: [

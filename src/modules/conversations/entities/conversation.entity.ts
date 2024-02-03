@@ -1,4 +1,4 @@
-import { Message } from 'src/modules/message/entities/message.entity';
+import { Message } from '../../message/entities/message.entity';
 import { User } from 'src/modules/user/entities/user.entity';
 import {
     Column,
