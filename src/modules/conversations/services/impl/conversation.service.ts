@@ -9,6 +9,7 @@ import { IUserService } from 'src/modules/user/services/interface-user.service';
 import { Messages } from 'src/common/utils/response-message';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { IFriendService } from 'src/modules/friend/services/interface-friend.service';
 
 @Injectable()
 export class ConversationService implements IConversationService {
@@ -16,6 +17,7 @@ export class ConversationService implements IConversationService {
         @InjectRepository(Conversation) private readonly conversationRepository: Repository<Conversation>,
         @InjectRepository(Message) private readonly messageRepository: Repository<Message>,
         @Inject(Services.USER) private readonly userService: IUserService,
+        @Inject(Services.FRIENDS_SERVICE) private readonly friendsService: IFriendService,
     ) { }
 
     async createConversation(user: User, conversationParams: CreateConversationParams) {
@@ -31,6 +33,15 @@ export class ConversationService implements IConversationService {
                 throw new HttpException(Messages.CONFLICT, HttpStatus.CONFLICT);
             }
 
+            const isFriends = await this.friendsService.isFriends(
+                user.id,
+                recipient.id,
+            );
+
+            if (!isFriends) {
+                throw new HttpException("Friend not found", HttpStatus.BAD_REQUEST);
+            }
+
             const exists = await this.isCreated(user.id, recipient.id);
 
             if (exists) {
@@ -44,8 +55,14 @@ export class ConversationService implements IConversationService {
 
             const conversation = await this.conversationRepository.save(newConversation);
 
-            // Add any additional logic you want to execute after creating a conversation
+            const newMessage = this.messageRepository.create({
+                content,
+                conversation,
+                author: user,
+            });
 
+            await this.messageRepository.save(newMessage);
+            return conversation;
         } catch (error) {
             console.error(`${Messages.CREATE_CONVERSATION_ERROR}: ${error.message}`);
             throw error;

@@ -4,11 +4,13 @@ export enum Routes {
     CONVERSATION = 'conversation',
 }
 
+
 export enum Services {
     AUTH = 'AUTH_SERVICE',
     USER = 'USER_SERVICE',
     CONVERSATION = 'CONVERSATION_SERVICE',
     THROTTLER_GUARD = 'THROTTLER_GUARD',
+    FRIENDS_SERVICE = "FRIENDS_SERVICE"
 }
 
 export enum Configs {
