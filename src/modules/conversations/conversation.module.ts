@@ -9,12 +9,13 @@ import { Role } from '../user/entities/role.entity';
 import { User } from '../user/entities/user.entity';
 import { AuthService } from '../auth/services/impl/auth.service';
 import { Conversation } from './entities/conversation.entity';
+import { Message } from '../message/entities/message.entity';
 
 @Module({
     imports: [
         UserModule,
         JwtModule,
-        TypeOrmModule.forFeature([User, Role, Conversation])
+        TypeOrmModule.forFeature([User, Role, Conversation, Message])
 
     ],
     controllers: [

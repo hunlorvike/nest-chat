@@ -5,7 +5,7 @@ import { GroupMessageAttachment } from '../../message-attachment/entities/group-
 import { User } from 'src/modules/user/entities/user.entity';
 
 @Entity({ name: 'group_messages' })
-export class GroupMessage  {
+export class GroupMessage {
   @PrimaryGeneratedColumn()
   id: number;
 

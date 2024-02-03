@@ -14,41 +14,125 @@ import { Repository } from 'typeorm';
 export class ConversationService implements IConversationService {
     constructor(
         @InjectRepository(Conversation) private readonly conversationRepository: Repository<Conversation>,
-        @Inject(Services.USER)
-        private readonly userService: IUserService,
+        @InjectRepository(Message) private readonly messageRepository: Repository<Message>,
+        @Inject(Services.USER) private readonly userService: IUserService,
     ) { }
 
     async createConversation(user: User, conversationParams: CreateConversationParams) {
-        const { username, message: content } = conversationParams;
-        const recipient = await this.userService.findUser({ username });
-        if (!recipient) {
-            throw new HttpException(Messages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
-        }
+        try {
+            const { username, message: content } = conversationParams;
+            const recipient = await this.userService.findUser({ username });
 
-        if (user.id === recipient.id) {
-            throw new HttpException("Cannot create conversation with yourself", HttpStatus.CONFLICT);
-        }
+            if (!recipient) {
+                throw new HttpException(Messages.USER_NOT_FOUND, HttpStatus.NOT_FOUND);
+            }
 
+            if (user.id === recipient.id) {
+                throw new HttpException(Messages.CONFLICT, HttpStatus.CONFLICT);
+            }
+
+            const exists = await this.isCreated(user.id, recipient.id);
+
+            if (exists) {
+                throw new HttpException(Messages.CONVERSATION_ALREADY_EXISTS, HttpStatus.CONFLICT);
+            }
+
+            const newConversation = this.conversationRepository.create({
+                creator: user,
+                recipient
+            });
+
+            const conversation = await this.conversationRepository.save(newConversation);
+
+            // Add any additional logic you want to execute after creating a conversation
+
+        } catch (error) {
+            console.error(`${Messages.CREATE_CONVERSATION_ERROR}: ${error.message}`);
+            throw error;
+        }
     }
+
     getConversations(user: User): Promise<Conversation[]> {
-        throw new Error('Method not implemented.');
+        return this.conversationRepository
+            .createQueryBuilder('conversation')
+            .leftJoinAndSelect('conversation.lastMessageSent', 'lastMessageSent')
+            .leftJoinAndSelect('conversation.creator', 'creator')
+            .leftJoinAndSelect('conversation.recipient', 'recipient')
+            .leftJoinAndSelect('creator.peer', 'creatorPeer')
+            .leftJoinAndSelect('recipient.peer', 'recipientPeer')
+            .leftJoinAndSelect('creator.profile', 'creatorProfile')
+            .leftJoinAndSelect('recipient.profile', 'recipientProfile')
+            .andWhere('(creator.id = :id OR recipient.id = :id)', { id: user.id })
+            .orderBy('conversation.lastMessageSentAt', 'DESC')
+            .getMany();
     }
+
     findById(id: number): Promise<Conversation> {
-        throw new Error('Method not implemented.');
+        return this.conversationRepository.findOne({
+            where: { id },
+            relations: [
+                'creator',
+                'recipient',
+                'creator.profile',
+                'recipient.profile',
+                'lastMessageSend',
+            ]
+        })
     }
-    hasAccess(params: AccessParams): Promise<boolean> {
-        throw new Error('Method not implemented.');
+
+    async hasAccess(params: AccessParams): Promise<boolean> {
+        const conversation = await this.findById(params.id);
+        if (!conversation) {
+            throw new HttpException('Conversation not found', HttpStatus.NOT_FOUND);
+
+        }
+        return (
+            conversation.creator.id === params.userId || conversation.recipient.id === params.userId
+        );
     }
+
     isCreated(userId: number, recipienId: number): Promise<Conversation> {
-        throw new Error('Method not implemented.');
+        return this.conversationRepository.findOne({
+            where: [
+                {
+                    creator: { id: userId },
+                    recipient: { id: recipienId },
+                },
+                {
+                    creator: { id: recipienId },
+                    recipient: { id: userId },
+                }
+            ]
+        })
     }
+
     save(conversation: Conversation): Promise<Conversation> {
-        throw new Error('Method not implemented.');
+        return this.conversationRepository.save(conversation);
     }
-    getMessages(params: GetConversationMessagesParams): Promise<Conversation> {
-        throw new Error('Method not implemented.');
+
+    async getMessages(params: GetConversationMessagesParams): Promise<Conversation> {
+        try {
+            const conversation = await this.conversationRepository
+                .createQueryBuilder('conversation')
+                .leftJoinAndSelect('conversation.lastMessageSent', 'lastMessageSent')
+                .leftJoinAndSelect('conversation.messages', 'message')
+                .where('conversation.id = :id', { id: params.id })
+                .orderBy('message.createdAt', 'DESC')
+                .limit(params.limit)
+                .getOne();
+
+            if (!conversation) {
+                throw new HttpException(Messages.CONVERSATION_NOT_FOUND, HttpStatus.NOT_FOUND);
+            }
+
+            return conversation;
+        } catch (error) {
+            console.error(`${Messages.GET_MESSAGES_ERROR}: ${error.message}`);
+            throw error;
+        }
     }
+
     update(params: Partial<{ id: number; lastMessageSent: Message; }>) {
-        throw new Error('Method not implemented.');
+        return this.conversationRepository.update(params.id, { lastMessageSent: params.lastMessageSent })
     }
 }

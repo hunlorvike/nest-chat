@@ -22,4 +22,9 @@ export const Messages = {
     USER_NOT_AUTHORIZED: 'User not authorized for this action',
     NOT_FOUND_ERROR: 'Resource not found',
     OPERATION_FAILED: 'Operation failed',
+    CONVERSATION_NOT_FOUND: 'Conversation not found',
+    CONFLICT: 'Conflict',
+    CREATE_CONVERSATION_ERROR: 'Error creating conversation',
+    CONVERSATION_ALREADY_EXISTS: 'Conversation already exists',
+    GET_MESSAGES_ERROR: 'Error getting messages for conversation',
 };
