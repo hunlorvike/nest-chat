@@ -14,9 +14,9 @@ import { FriendRequestService } from './services/impl/friend-request.service';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Friend, FriendRequest]),
         UserModule,
-        FriendModule
+        FriendModule,
+        TypeOrmModule.forFeature([Friend, FriendRequest]),
     ],
     controllers: [
         FriendRequestController,

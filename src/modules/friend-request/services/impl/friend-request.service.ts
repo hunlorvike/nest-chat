@@ -79,13 +79,13 @@ export class FriendRequestService implements IFriendRequestService {
             throw new HttpException("Friend relationship already exists", HttpStatus.BAD_REQUEST);
         }
 
-        const friend = this.friendRequestRepository.create({
+        const friendRequest = this.friendRequestRepository.create({
             sender,
             receiver,
             status: 'pending',
         });
 
-        return this.friendRequestRepository.save(friend);
+        return this.friendRequestRepository.save(friendRequest);
     }
 
     async reject({ id, userId }: CancelFriendRequestParams) {
