@@ -14,13 +14,15 @@ import { JwtModule } from '@nestjs/jwt';
 import { User } from './modules/user/entities/user.entity';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { FriendRequestModule } from './modules/friend-request/friend-request.module';
 
 dotenv.config();
 
 
 @Module({
 	imports: [
-        FriendModule, 
+		FriendRequestModule,
+		FriendModule,
 		ConversationModule,
 		UserModule,
 		AuthModule,

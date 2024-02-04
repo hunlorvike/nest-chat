@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, Post, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Inject, Post, Param, UseGuards, Body } from '@nestjs/common';
 import { ApiTagConfigs, Routes, Services } from 'src/common/utils/constrants';
 import { IConversationService } from '../services/interface-conversation.service';
 import { ApiTags } from '@nestjs/swagger';
@@ -31,9 +31,14 @@ export class ConversationController {
 	}
 
 	@Post()
-	createConversation(@GetUser() user: User, createConversationDto: CreateConversationDto) {
-		const conversation = this.conversationService.createConversation(user, createConversationDto);
+	async createConversation(@GetUser() user: User, @Body() createConversationDto: CreateConversationDto) {
+		console.log(user);
+		console.log(createConversationDto);
+
+		const conversation = await this.conversationService.createConversation(user, createConversationDto);
 		this.events.emit('conversation.create', conversation);
+
 		return conversation;
 	}
+
 }
