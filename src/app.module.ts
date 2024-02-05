@@ -1,3 +1,6 @@
+import { ImageStoreModule } from './modules/image-storage/image-storage.module';
+import { MessageAttachmentModule } from './modules/message-attachment/message-attachment.module';
+import { MessageModule } from './modules/message/message.module';
 import { FriendModule } from './modules/friend/friend.module';
 import { ConversationModule } from './modules/conversations/conversation.module';
 import { Module } from '@nestjs/common';
@@ -22,6 +25,9 @@ dotenv.config();
 
 @Module({
 	imports: [
+        ImageStoreModule, 
+        MessageAttachmentModule, 
+		MessageModule,
 		FriendRequestModule,
 		FriendModule,
 		ConversationModule,
@@ -49,9 +55,9 @@ dotenv.config();
 			useClass: ThrottlerGuard
 		},
 		{
-            provide: Services.AUTH,
-            useClass: AuthService,
-        },
+			provide: Services.AUTH,
+			useClass: AuthService,
+		},
 	]
 })
 export class AppModule {

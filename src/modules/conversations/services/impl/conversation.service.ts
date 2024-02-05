@@ -17,7 +17,7 @@ export class ConversationService implements IConversationService {
         @InjectRepository(Conversation) private readonly conversationRepository: Repository<Conversation>,
         @InjectRepository(Message) private readonly messageRepository: Repository<Message>,
         @Inject(Services.USER) private readonly userService: IUserService,
-        @Inject(Services.FRIENDS_SERVICE) private readonly friendsService: IFriendService,
+        @Inject(Services.FRIEND_SERVICE) private readonly friendsService: IFriendService,
     ) { }
 
     async createConversation(user: User, conversationParams: CreateConversationParams) {

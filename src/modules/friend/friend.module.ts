@@ -24,7 +24,7 @@ import { Role } from '../user/entities/role.entity';
     controllers: [FriendsController],
     providers: [
         {
-            provide: Services.FRIENDS_SERVICE,
+            provide: Services.FRIEND_SERVICE,
             useClass: FriendService
         },
         {
@@ -34,7 +34,7 @@ import { Role } from '../user/entities/role.entity';
     ],
     exports: [
         {
-            provide: Services.FRIENDS_SERVICE,
+            provide: Services.FRIEND_SERVICE,
             useClass: FriendService,
         },
     ],

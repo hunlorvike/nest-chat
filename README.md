@@ -81,8 +81,4 @@ $ npm run test:cov
 
 ## Support
 
-```bash
-$ ts-node -r tsconfig-paths/register ./node_modules/typeorm-seeding/dist/cli.js seed -s src/database/seeders --dropDB
-```
-
 Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).

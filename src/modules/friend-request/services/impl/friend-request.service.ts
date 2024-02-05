@@ -15,7 +15,7 @@ export class FriendRequestService implements IFriendRequestService {
         @InjectRepository(Friend) private readonly friendRepository: Repository<Friend>,
         @InjectRepository(FriendRequest) private readonly friendRequestRepository: Repository<FriendRequest>,
         @Inject(Services.USER) private readonly userService: IUserService,
-        @Inject(Services.FRIENDS_SERVICE) private readonly friendService: IFriendService
+        @Inject(Services.FRIEND_SERVICE) private readonly friendService: IFriendService
     ) { }
 
     async accept({ id, userId }: FriendRequestParams) {

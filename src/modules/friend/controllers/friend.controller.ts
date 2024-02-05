@@ -25,7 +25,7 @@ import { Roles } from 'src/common/decorators/role.decorator';
 @Roles()
 export class FriendsController {
     constructor(
-        @Inject(Services.FRIENDS_SERVICE) private readonly friendService: IFriendService,
+        @Inject(Services.FRIEND_SERVICE) private readonly friendService: IFriendService,
         private readonly events: EventEmitter2,
     ) { }
 

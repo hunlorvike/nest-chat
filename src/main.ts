@@ -17,7 +17,7 @@ async function bootstrap() {
 
 	app.useGlobalInterceptors(new ResponseInterceptor());
 
-	app.useStaticAssets(join(__dirname, '..', 'public'), {
+	app.useStaticAssets(join(__dirname, '..', 'static'), {
 		prefix: '/',
 		setHeaders: (res) => {
 			res.set('Cache-Control', 'max-age=2592000');
