@@ -16,17 +16,44 @@ export class MessageAttachmentService implements IMessageAttachmentsService {
         @InjectRepository(GroupMessageAttachment) private readonly groupAttachmentRepository: Repository<GroupMessageAttachment>,
         @Inject(Services.IMAGE_UPLOAD_SERVICE) private readonly imageUploadService: IImageStorageService,
     ) { }
-    
-    create(attachments: Attachment[]): Promise<MessageAttachment[]> {
-        throw new Error("Method not implemented.");
+
+    create(attachments: Attachment[]) {
+        const promise = attachments.map((attachment) => {
+            const newAttachment = this.attachmentRepository.create();
+            return this.attachmentRepository
+                .save(newAttachment)
+                .then((messageAttachment) =>
+                    this.imageUploadService.uploadMessageAttachment({
+                        messageAttachment,
+                        file: attachment,
+                    }),
+                );
+        });
+        return Promise.all(promise);
     }
 
-    createGroupAttachments(attachments: Attachment[]): Promise<GroupMessageAttachment[]> {
-        throw new Error("Method not implemented.");
+    createGroupAttachments(
+        attachments: Attachment[],
+    ): Promise<GroupMessageAttachment[]> {
+        const promise = attachments.map((attachment) => {
+            const newAttachment = this.groupAttachmentRepository.create();
+            return this.groupAttachmentRepository
+                .save(newAttachment)
+                .then((messageAttachment) =>
+                    this.imageUploadService.uploadGroupMessageAttachment({
+                        messageAttachment,
+                        file: attachment,
+                    }),
+                );
+        });
+        return Promise.all(promise);
     }
 
     deleteAllAttachments(attachments: MessageAttachment[]) {
-        throw new Error("Method not implemented.");
+        const promise = attachments.map((attachment) =>
+            this.attachmentRepository.delete(attachment.key),
+        );
+        return Promise.all(promise);
     }
 
 }
