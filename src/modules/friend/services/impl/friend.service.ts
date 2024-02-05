@@ -24,10 +24,17 @@ export class FriendService implements IFriendService {
             .where('sender.id = :id OR receiver.id = :id', { id })
             .getMany();
 
-        return friends;
+        const processedFriends = friends.map((friend) => ({
+            id: friend.id,
+            sender: this.processUser(friend.sender),
+            receiver: this.processUser(friend.receiver),
+            createdAt: friend.createdAt,
+        }));
+
+        return processedFriends;
     }
 
-    findFriendById(id: number): Promise<Friend> {
+    async findFriendById(id: number): Promise<Friend> {
         return this.friendsRepository.findOne({
             where: { id },
             relations: [
@@ -41,7 +48,7 @@ export class FriendService implements IFriendService {
         });
     }
 
-    async deleteFriend({ id, userId }: DeleteFriendRequestParams) {
+    async deleteFriend({ id, userId }: DeleteFriendRequestParams): Promise<Friend> {
         try {
             const friend = await this.findFriendById(id);
 
@@ -49,7 +56,7 @@ export class FriendService implements IFriendService {
                 throw new HttpException("Friend not found", HttpStatus.NOT_FOUND);
             }
 
-            if (friend.receiver.id !== userId && friend.sender.id !== userId) {
+            if (!this.isAuthorizedToDelete(friend, userId)) {
                 throw new HttpException("Unauthorized to delete this friend", HttpStatus.UNAUTHORIZED);
             }
 
@@ -61,7 +68,7 @@ export class FriendService implements IFriendService {
         }
     }
 
-    isFriends(userOneId: number, userTwoId: number) {
+    async isFriends(userOneId: number, userTwoId: number): Promise<Friend | undefined> {
         return this.friendsRepository.findOne({
             where: [
                 {
@@ -74,5 +81,20 @@ export class FriendService implements IFriendService {
                 },
             ],
         });
+    }
+
+    private processUser(user: any): any {
+        return {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            phone: user.phone,
+            firstName: user.firstName,
+            lastName: user.lastName,
+        };
+    }
+
+    private isAuthorizedToDelete(friend: Friend, userId: number): boolean {
+        return friend.receiver.id === userId || friend.sender.id === userId;
     }
 }
