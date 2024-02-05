@@ -15,30 +15,34 @@ import { IConversationService } from '../services/interface-conversation.service
 @UseGuards(JwtGuard)
 @Roles()
 export class ConversationController {
-  constructor(
-    @Inject(Services.CONVERSATION) private readonly conversationService: IConversationService,
-    private readonly events: EventEmitter2,
-  ) {}
+	constructor(
+		@Inject(Services.CONVERSATION) private readonly conversationService: IConversationService,
+		private readonly events: EventEmitter2,
+	) { }
 
-  @Get()
-  @ApiOkResponse({ description: 'Returns a list of conversations for the authenticated user' })
-  async getConversations(@GetUser() user: User) {
-    return this.conversationService.getConversations(user);
-  }
+	@Get()
+	@ApiOkResponse({ description: 'Returns a list of conversations for the authenticated user' })
+	async getConversations(@GetUser() user: User) {
+		const data = await this.conversationService.getConversations(user);
+		return { data: data };
+	}
 
-  @Get(':id')
-  @ApiOkResponse({ description: 'Returns details of a conversation by ID' })
-  @ApiNotFoundResponse({ description: 'Conversation not found' })
-  async getConversationById(@Param('id') id: number) {
-    return this.conversationService.findById(id);
-  }
+	@Get(':id')
+	@ApiOkResponse({ description: 'Returns details of a conversation by ID' })
+	@ApiNotFoundResponse({ description: 'Conversation not found' })
+	async getConversationById(@Param('id') id: number) {
+		const data = await this.conversationService.findById(id);
+		return {
+			data: data
+		}
+	}
 
-  @Post()
-  @ApiCreatedResponse({ description: 'Creates a new conversation' })
-  async createConversation(@GetUser() user: User, @Body() createConversationDto: CreateConversationDto) {
-    const conversation = await this.conversationService.createConversation(user, createConversationDto);
-    this.events.emit('conversation.create', conversation);
+	@Post()
+	@ApiCreatedResponse({ description: 'Creates a new conversation' })
+	async createConversation(@GetUser() user: User, @Body() createConversationDto: CreateConversationDto) {
+		const conversation = await this.conversationService.createConversation(user, createConversationDto);
+		this.events.emit('conversation.create', conversation);
 
-    return conversation;
-  }
+		return conversation;
+	}
 }

@@ -50,7 +50,8 @@ export class ConversationService implements IConversationService {
 
             const newConversation = this.conversationRepository.create({
                 creator: user,
-                recipient
+                recipient,
+                lastMessageSent: null,
             });
 
             const conversation = await this.conversationRepository.save(newConversation);
@@ -61,7 +62,11 @@ export class ConversationService implements IConversationService {
                 author: user,
             });
 
+            conversation.lastMessageSent = newMessage;
+
             await this.messageRepository.save(newMessage);
+            await this.conversationRepository.save(conversation);
+
             return conversation;
         } catch (error) {
             console.error(`${Messages.CREATE_CONVERSATION_ERROR}: ${error.message}`);
@@ -69,32 +74,55 @@ export class ConversationService implements IConversationService {
         }
     }
 
-    getConversations(user: User): Promise<Conversation[]> {
-        return this.conversationRepository
+    async getConversations(user: User): Promise<Conversation[]> {
+        const conversations = await this.conversationRepository
             .createQueryBuilder('conversation')
             .leftJoinAndSelect('conversation.lastMessageSent', 'lastMessageSent')
             .leftJoinAndSelect('conversation.creator', 'creator')
             .leftJoinAndSelect('conversation.recipient', 'recipient')
             .leftJoinAndSelect('creator.peer', 'creatorPeer')
             .leftJoinAndSelect('recipient.peer', 'recipientPeer')
-            .leftJoinAndSelect('creator.profile', 'creatorProfile')
-            .leftJoinAndSelect('recipient.profile', 'recipientProfile')
             .andWhere('(creator.id = :id OR recipient.id = :id)', { id: user.id })
             .orderBy('conversation.lastMessageSentAt', 'DESC')
             .getMany();
+
+        const processedConversations = conversations.map((conversation) => {
+            return {
+                id: conversation.id,
+                creator: this.processUser(conversation.creator),
+                recipient: this.processUser(conversation.recipient),
+                lastMessageSent: conversation.lastMessageSent,
+                createdAt: conversation.createdAt,
+                lastMessageSentAt: conversation.lastMessageSentAt,
+            } as Conversation;
+        });
+
+        return processedConversations;
     }
 
-    findById(id: number): Promise<Conversation> {
-        return this.conversationRepository.findOne({
-            where: { id },
-            relations: [
-                'creator',
-                'recipient',
-                'creator.profile',
-                'recipient.profile',
-                'lastMessageSend',
-            ]
-        })
+    async findById(id: number): Promise<Conversation | null> {
+        const conversation = await this.conversationRepository
+            .createQueryBuilder('conversation')
+            .leftJoinAndSelect('conversation.lastMessageSent', 'lastMessageSent')
+            .leftJoinAndSelect('conversation.creator', 'creator')
+            .leftJoinAndSelect('conversation.recipient', 'recipient')
+            .leftJoinAndSelect('creator.profile', 'creatorProfile')
+            .leftJoinAndSelect('recipient.profile', 'recipientProfile')
+            .where('conversation.id = :id', { id })
+            .getOne();
+
+        if (!conversation) {
+            return null;
+        }
+
+        return {
+            id: conversation.id,
+            creator: this.processUser(conversation.creator),
+            recipient: this.processUser(conversation.recipient),
+            lastMessageSent: conversation.lastMessageSent,
+            createdAt: conversation.createdAt,
+            lastMessageSentAt: conversation.lastMessageSentAt,
+        } as Conversation;
     }
 
     async hasAccess(params: AccessParams): Promise<boolean> {
@@ -152,4 +180,17 @@ export class ConversationService implements IConversationService {
     update(params: Partial<{ id: number; lastMessageSent: Message; }>) {
         return this.conversationRepository.update(params.id, { lastMessageSent: params.lastMessageSent })
     }
+
+
+    private processUser(user: any): any {
+        return {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            phone: user.phone,
+            firstName: user.firstName,
+            lastName: user.lastName,
+        };
+    }
+
 }
