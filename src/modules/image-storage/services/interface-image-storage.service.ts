@@ -10,4 +10,8 @@ export interface IImageStorageService {
     uploadGroupMessageAttachment(
         params: UploadGroupMessageAttachmentParams,
     ): Promise<GroupMessageAttachment>;
+
+    getFile(key: string): Buffer;
+    deleteFile(key: string): void;
+    deleteGroupMessageAttachment(params: { key: string, previewKey: string }): Promise<void>;
 }

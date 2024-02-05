@@ -6,6 +6,7 @@ import { GroupMessageAttachment } from "../../entities/group-message-attachment.
 import { InjectRepository } from "@nestjs/typeorm";
 import { Services } from "src/common/utils/constrants";
 import { Repository } from "typeorm";
+import { IImageStorageService } from "src/modules/image-storage/services/interface-image-storage.service";
 
 @Injectable()
 export class MessageAttachmentService implements IMessageAttachmentsService {

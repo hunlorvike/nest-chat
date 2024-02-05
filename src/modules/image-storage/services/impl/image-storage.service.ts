@@ -1,93 +1,72 @@
-import { Injectable } from "@nestjs/common";
-import { IImageStorageService } from "../interface-image-storage.service";
-import { UploadImageParams, UploadMessageAttachmentParams, UploadGroupMessageAttachmentParams } from "src/common/utils/types";
-import { GroupMessageAttachment } from "src/modules/message-attachment/entities/group-message-attachment.entity";
-import { MessageAttachment } from "src/modules/message/entities/message-attachment.entity";
-import path from "path";
-import * as mkdirp from 'mkdirp';
-import * as sharp from 'sharp';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import * as fs from 'fs';
-import { v4 as uuidv4 } from 'uuid';
+import * as path from 'path';
+import { GroupMessageAttachment } from 'src/modules/message-attachment/entities/group-message-attachment.entity';
+import { compressImage } from 'src/common/utils/helpers';
+import { UploadImageParams, UploadMessageAttachmentParams, UploadGroupMessageAttachmentParams } from 'src/common/utils/types';
+import { IImageStorageService } from '../interface-image-storage.service';
 
 @Injectable()
 export class ImageStorageService implements IImageStorageService {
-    private readonly UPLOAD_FOLDER = path.join(__dirname, '..', '..', 'static');
+	upload(params: UploadImageParams) {
+		const filePath = path.join(__dirname, 'static', params.key);
+		fs.writeFileSync(filePath, params.file.buffer);
 
-    private generateUniqueFileName(originalFileName: string): string {
-        const fileExtension = path.extname(originalFileName).slice(1);
-        const uniqueId = uuidv4();
-        return `${uniqueId}.${fileExtension}`;
-    }
+		return { success: true, message: 'File uploaded locally' };
+	}
 
-    async upload(params: UploadImageParams): Promise<string> {
-        const subFolder = this.determineSubFolder(params.file.originalname);
-        const uniqueFileName = this.generateUniqueFileName(params.file.originalname);
+	async uploadMessageAttachment(params: UploadMessageAttachmentParams) {
+		const originalPath = path.join(__dirname, 'static', 'original', params.messageAttachment.key);
+		const previewPath = path.join(__dirname, 'static', 'preview', params.messageAttachment.key);
 
-        const relativeFilePath = path.join(subFolder, uniqueFileName);
-        const fullFilePath = path.join(this.UPLOAD_FOLDER, relativeFilePath);
+		fs.writeFileSync(originalPath, params.file.buffer);
 
-        try {
-            mkdirp.sync(path.dirname(fullFilePath));
+		const compressedImage = await compressImage(params.file);
+		fs.writeFileSync(previewPath, compressedImage);
 
-            await sharp(params.file.buffer)
-                .webp({ quality: 80 })
-                .toFile(fullFilePath);
+		return params.messageAttachment;
+	}
 
-            return relativeFilePath;
-        } catch (error) {
-            console.error(error);
-            throw new Error('Error uploading file');
-        }
-    }
+	async uploadGroupMessageAttachment(params: UploadGroupMessageAttachmentParams): Promise<GroupMessageAttachment> {
+		const originalPath = path.join(__dirname, 'static', 'original', params.messageAttachment.key);
+		const previewPath = path.join(__dirname, 'static', 'preview', params.messageAttachment.key);
 
-    async uploadMessageAttachment(params: UploadMessageAttachmentParams): Promise<MessageAttachment> {
-        throw new Error("Method not implemented.");
-    }
+		fs.writeFileSync(originalPath, params.file.buffer);
 
-    async uploadGroupMessageAttachment(params: UploadGroupMessageAttachmentParams): Promise<GroupMessageAttachment> {
-        throw new Error("Method not implemented.");
-    }
+		const compressedImage = await compressImage(params.file);
+		fs.writeFileSync(previewPath, compressedImage);
 
-    checkFileType(file: Express.Multer.File): string {
-        const fileExtension = path.extname(file.originalname).slice(1);
-        return this.isImageFile(fileExtension) ? 'images' :
-            this.isVideoFile(fileExtension) ? 'videos' :
-                'other';
-    }
+		return params.messageAttachment;
+	}
 
-    determineSubFolderForFile(file: Express.Multer.File): string {
-        const fileExtension = path.extname(file.originalname).slice(1);
-        return this.determineSubFolder(fileExtension);
-    }
+	getFile(key: string): Buffer {
+		const filePath = path.join(__dirname, 'static', key);
 
-    async deleteFile(filePath: string): Promise<boolean> {
-        const fullFilePath = path.join(this.UPLOAD_FOLDER, filePath);
+		if (!fs.existsSync(filePath)) {
+			throw new NotFoundException('File not found');
+		}
 
-        try {
-            if (fs.existsSync(fullFilePath)) {
-                await fs.promises.unlink(fullFilePath);
-                return true;
-            }
-            return false;
-        } catch (error) {
-            console.error('Error deleting file:', error);
-            throw new Error('Error deleting file');
-        }
-    }
+		return fs.readFileSync(filePath);
+	}
 
-    isImageFile(fileExtension: string): boolean {
-        const allowedImageExtensions = ['jpg', 'png', 'gif'];
-        return allowedImageExtensions.includes(fileExtension.toLowerCase());
-    }
+	deleteFile(key: string): void {
+		const filePath = path.join(__dirname, 'static', key);
 
-    isVideoFile(fileExtension: string): boolean {
-        const allowedVideoExtensions = ['mp4', 'avi', 'mkv'];
-        return allowedVideoExtensions.includes(fileExtension.toLowerCase());
-    }
+		if (fs.existsSync(filePath)) {
+			fs.unlinkSync(filePath);
+		}
+	}
 
-    determineSubFolder(fileExtension: string): string {
-        return this.isImageFile(fileExtension) ? 'images' :
-            this.isVideoFile(fileExtension) ? 'videos' :
-                'other';
-    }
+	async deleteGroupMessageAttachment(params: { key: string, previewKey: string }): Promise<void> {
+		const originalPath = path.join(__dirname, 'static', 'original', params.key);
+		const previewPath = path.join(__dirname, 'static', 'preview', params.previewKey);
+
+		if (fs.existsSync(originalPath)) {
+			fs.unlinkSync(originalPath);
+		}
+
+		if (fs.existsSync(previewPath)) {
+			fs.unlinkSync(previewPath);
+		}
+	}
 }
