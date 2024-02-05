@@ -19,35 +19,44 @@ export class ResponseInterceptor implements NestInterceptor {
     ): import('rxjs').Observable<any> | Promise<import('rxjs').Observable<any>> {
         return next.handle().pipe(
             map((content: Content) => {
-                if (!content) {
-                    return {
-                        code: HttpStatus.OK,
-                        data: null,
-                        metadata: null,
-                        message: ResponseStatus.FAIL
-                    };
-                }
-
                 const req = context.switchToHttp().getRequest();
 
-                const metadata = {
-                    ...content.metadata,
-                    appName: process.env.APP_NAME,
-                    apiVersion: process.env.VERSION,
-                    endpoint: req.originalUrl,
-                    timestamp: new Date(),
-                    length: content?.data?.length,
-                    query: req.query ? { ...req.query } : undefined,
-                    params: req.params ? { ...req.params } : undefined,
-                }; 
+                const data = content?.data ?? {};
+                const code = content?.code ?? HttpStatus.OK;
+                const message = content?.message ?? null;
+
+                const metadata = this.buildMetadata(req, content);
 
                 return {
-                    data: content.data ?? {},
-                    code: content.code ?? HttpStatus.OK,
-                    message: content.message ?? null,
+                    data: data,
+                    code: code,
+                    message: message,
                     metadata: metadata,
                 };
             }),
         );
+    }
+
+    private buildMetadata(req: any, content: Content): Record<string, unknown> {
+        const defaultMetadata = {
+            appName: process.env.APP_NAME,
+            apiVersion: process.env.VERSION,
+            endpoint: req.originalUrl,
+            timestamp: new Date(),
+        };
+
+        if (content?.data) {
+            defaultMetadata['length'] = content.data.length;
+        }
+
+        if (req.query) {
+            defaultMetadata['query'] = { ...req.query };
+        }
+
+        if (req.params) {
+            defaultMetadata['params'] = { ...req.params };
+        }
+
+        return { ...defaultMetadata, ...content?.metadata };
     }
 }

@@ -15,31 +15,33 @@ import { IFriendService } from '../services/interface-friend.service';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
 import { JwtGuard } from 'src/common/guards/jwt.guard';
 import { Roles } from 'src/common/decorators/role.decorator';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @ApiTags(ApiTagConfigs.FRIEND)
+@ApiBearerAuth()
 @SkipThrottle()
 @Controller(Routes.FRIEND)
 @UseGuards(JwtGuard)
 @Roles()
 export class FriendsController {
     constructor(
-        @Inject(Services.FRIENDS_SERVICE) private readonly friendsService: IFriendService,
-		private readonly events: EventEmitter2,
+        @Inject(Services.FRIENDS_SERVICE) private readonly friendService: IFriendService,
+        private readonly events: EventEmitter2,
     ) { }
 
     @Get()
-    getFriends(@GetUser() user: User) {
-        console.log('Fetching Friends');
-        return this.friendsService.getFriends(user.id);
+    async getFriends(@GetUser() user: User) {
+      const data = await this.friendService.getFriends(user.id);
+      console.log(data)
+      return { data };
     }
-
+  
     @Delete(':id/delete')
     async deleteFriend(
         @GetUser() user: User,
         @Param('id', ParseIntPipe) id: number,
     ) {
-        const friend = await this.friendsService.deleteFriend({ id, userId: user.id });
+        const friend = await this.friendService.deleteFriend({ id, userId: user.id });
         this.events.emit(ServerEvents.FRIEND_REMOVED, { friend, userId: user.id });
         return friend;
     }

@@ -12,18 +12,19 @@ export class FriendService implements IFriendService {
         private readonly friendsRepository: Repository<Friend>,
     ) { }
 
-    getFriends(id: number): Promise<Friend[]> {
-        return this.friendsRepository.find({
-            where: [{ sender: { id } }, { receiver: { id } }],
-            relations: [
-                'sender',
-                'receiver',
-                'sender.profile',
-                'receiver.profile',
-                'receiver.presence',
-                'sender.presence',
-            ],
-        });
+    async getFriends(id: number): Promise<Friend[]> {
+        const friends = await this.friendsRepository
+            .createQueryBuilder('friend')
+            .leftJoinAndSelect('friend.sender', 'sender')
+            .leftJoinAndSelect('friend.receiver', 'receiver')
+            .leftJoinAndSelect('sender.profile', 'senderProfile')
+            .leftJoinAndSelect('receiver.profile', 'receiverProfile')
+            .leftJoinAndSelect('sender.presence', 'senderPresence')
+            .leftJoinAndSelect('receiver.presence', 'receiverPresence')
+            .where('sender.id = :id OR receiver.id = :id', { id })
+            .getMany();
+
+        return friends;
     }
 
     findFriendById(id: number): Promise<Friend> {

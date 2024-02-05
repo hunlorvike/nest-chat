@@ -15,13 +15,20 @@ export const GetUser = () => {
 			}
 
 			const authorizationHeader = request.headers.authorization;
+			console.log(authorizationHeader);
 
-			if (authorizationHeader && authorizationHeader.startsWith('Bearer')) {
-				const authorizationNewHeader = authorizationHeader.split('Bearer ')[1];
+			if (authorizationHeader) {
+				let token: string;
+
+				if (authorizationHeader.startsWith('Bearer')) {
+					token = authorizationHeader.split('Bearer ')[1];
+				} else {
+					token = authorizationHeader;
+				}
 
 				const secretKey = process.env.JWT_SECRET || "aLongSecretStringWhoseBitnessIsEqualToOrGreaterThanTheBitnessOfTheTokenEncryptionAlgorithm";
 				try {
-					const decodedToken = await jwtService.verifyAsync(authorizationNewHeader, {
+					const decodedToken = await jwtService.verifyAsync(token, {
 						secret: secretKey,
 					});
 

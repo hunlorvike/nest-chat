@@ -4,6 +4,9 @@ import { Strategy, ExtractJwt } from 'passport-jwt';
 import { AuthService } from "src/modules/auth/services/impl/auth.service";
 import { PassportStrategy } from '@nestjs/passport';
 import { Configs } from "./constrants";
+import * as dotenv from 'dotenv'
+
+dotenv.config();
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
