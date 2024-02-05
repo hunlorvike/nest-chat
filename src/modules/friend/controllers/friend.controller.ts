@@ -5,16 +5,23 @@ import {
     Inject,
     Param,
     ParseIntPipe,
+    UseGuards,
 } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SkipThrottle } from '@nestjs/throttler';
-import { Routes, ServerEvents, Services } from 'src/common/utils/constrants';
+import { ApiTagConfigs, Routes, ServerEvents, Services } from 'src/common/utils/constrants';
 import { User } from 'src/modules/user/entities/user.entity';
 import { IFriendService } from '../services/interface-friend.service';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
+import { JwtGuard } from 'src/common/guards/jwt.guard';
+import { Roles } from 'src/common/decorators/role.decorator';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags(ApiTagConfigs.FRIEND)
 @SkipThrottle()
 @Controller(Routes.FRIEND)
+@UseGuards(JwtGuard)
+@Roles()
 export class FriendsController {
     constructor(
         @Inject(Services.FRIENDS_SERVICE) private readonly friendsService: IFriendService,

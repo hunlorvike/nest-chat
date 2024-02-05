@@ -15,6 +15,7 @@ import { User } from './modules/user/entities/user.entity';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { FriendRequestModule } from './modules/friend-request/friend-request.module';
+import { AuthService } from './modules/auth/services/impl/auth.service';
 
 dotenv.config();
 
@@ -46,7 +47,11 @@ dotenv.config();
 		{
 			provide: Services.THROTTLER_GUARD,
 			useClass: ThrottlerGuard
-		}
+		},
+		{
+            provide: Services.AUTH,
+            useClass: AuthService,
+        },
 	]
 })
 export class AppModule {

@@ -11,12 +11,17 @@ import { UserModule } from '../user/user.module';
 import { FriendModule } from '../friend/friend.module';
 import { Services } from 'src/common/utils/constrants';
 import { FriendRequestService } from './services/impl/friend-request.service';
+import { JwtModule } from '@nestjs/jwt';
+import { AuthService } from '../auth/services/impl/auth.service';
+import { Role } from '../user/entities/role.entity';
+import { User } from '../user/entities/user.entity';
 
 @Module({
     imports: [
         UserModule,
         FriendModule,
-        TypeOrmModule.forFeature([Friend, FriendRequest]),
+        JwtModule,
+        TypeOrmModule.forFeature([User, Role, Friend, FriendRequest]),
     ],
     controllers: [
         FriendRequestController,
@@ -25,6 +30,10 @@ import { FriendRequestService } from './services/impl/friend-request.service';
         {
             provide: Services.FRIEND_REQUEST_SERVICE,
             useClass: FriendRequestService,
+        },
+        {
+            provide: Services.AUTH,
+            useClass: AuthService,
         },
     ],
 })

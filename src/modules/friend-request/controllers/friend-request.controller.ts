@@ -10,10 +10,14 @@ import { User } from 'src/modules/user/entities/user.entity';
 import { GetUser } from '../../../common/decorators/get-user.decorator';
 import { CreateFriendDto } from '../dtos/create-friend.dto';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { Roles } from 'src/common/decorators/role.decorator';
+import { JwtGuard } from 'src/common/guards/jwt.guard';
 
 @ApiTags(ApiTagConfigs.FRIEND_REQUEST)
 @ApiBearerAuth()
 @Controller(Routes.FRIEND_REQUEST)
+@UseGuards(JwtGuard)
+@Roles()
 export class FriendRequestController {
     constructor(
         @Inject(Services.FRIEND_REQUEST_SERVICE)

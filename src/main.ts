@@ -40,7 +40,7 @@ async function bootstrap() {
 		.setTitle(APP_NAME)
 		.setDescription('Ứng dụng chat là một nền tảng giao tiếp đa phương tiện mạnh mẽ, được xây dựng trên cơ sở của NestJS, một framework Node.js hiệu suất cao và linh hoạt. Với giao diện người dùng thân thiện và tính năng đa dạng, ứng dụng này cung cấp trải nghiệm giao tiếp trực tuyến đồng thời và hiệu quả.')
 		.setVersion(VERSION)
-		.addTag(APP_PREFIX)
+		.addTag('Version 1.0')
 		.build();
 
 	const document = SwaggerModule.createDocument(app, config);

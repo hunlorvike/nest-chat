@@ -30,7 +30,8 @@ export enum ApiTagConfigs {
     AUTH = 'Auth',
     USER = 'User',
     CONVERSATION = 'Conversation',
-    FRIEND_REQUEST = 'Friend Request'
+    FRIEND = 'Friend',
+    FRIEND_REQUEST = 'Friend Request',
 }
 
 export enum ServerEvents {
