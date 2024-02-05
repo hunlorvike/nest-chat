@@ -22,76 +22,93 @@ export class JwtGuard implements CanActivate {
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
         const request = context.switchToHttp().getRequest();
-        const token = request.headers.authorization.split(' ')[1];
+        const token = this.extractTokenFromRequest(request);
 
         if (!token) {
-            throw new HttpException(Messages.TOKEN_INVALID, HttpStatus.UNAUTHORIZED);
+            this.throwUnauthorized(Messages.TOKEN_INVALID);
         }
 
         try {
-            const decodedToken = await this.jwtService.verifyAsync(token, {
-                secret: process.env.JWT_SECRET,
-            });
+            const decodedToken = await this.verifyToken(token);
 
             if (!decodedToken) {
-                throw new HttpException(Messages.TOKEN_INVALID, HttpStatus.UNAUTHORIZED);
+                this.throwUnauthorized(Messages.TOKEN_INVALID);
             }
 
-            const isTokenExpired = Date.now() >= decodedToken.exp * 1000;
-            if (isTokenExpired) {
-                const userId = decodedToken.sub;
+            if (this.isTokenExpired(decodedToken)) {
+                await this.refreshToken(request, decodedToken);
+            }
 
-                const user = await this.userRepository.findOne({ where: { id: userId } });
+            const user = await this.getUserFromToken(decodedToken);
 
-                if (!user) {
-                    return false;
-                }
-
-                const refreshToken = user.refreshToken;
-
-                if (refreshToken) {
-                    try {
-                        const newToken = await this.authService.generateAccessTokenFromRefreshToken(refreshToken);
-
-                        if (newToken && newToken.accessToken) {
-                            request.headers.authorization = `Bearer ${newToken.accessToken}`;
-
-                            const sanitizedUser = {
-                                id: user?.id,
-                                username: user?.username,
-                                email: user?.email,
-                                roles: user?.roles,
-                                firstName: user?.firstName,
-                                lastName: user?.lastName,
-                            };
-
-                            request.headers['user'] = (sanitizedUser);
-                            return true;
-                        }
-                    } catch (refreshTokenError) {
-                        console.error('Error generating access token from refresh token:', refreshTokenError);
-                        throw new HttpException(refreshTokenError.message, HttpStatus.UNAUTHORIZED);
-                    }
-                }
+            if (!user) {
                 return false;
             }
 
-            const user = await this.userRepository.findOne({ where: { id: decodedToken.sub } });
+            const sanitizedUser = this.sanitizeUser(user);
+            request.headers['user'] = sanitizedUser;
 
-            const sanitizedUser = {
-                id: user?.id,
-                username: user?.username,
-                email: user?.email,
-                roles: user?.roles,
-                firstName: user?.firstName,
-                lastName: user?.lastName,
-            };
-
-            request.headers['user'] = (sanitizedUser);
             return true;
         } catch (error) {
             console.error('Error validating token:', error);
-            throw new HttpException(error.message, HttpStatus.UNAUTHORIZED);
+            this.throwUnauthorized(error.message);
         }
+    }
+
+    private extractTokenFromRequest(request: any): string | null {
+        const authHeader = request.headers.authorization;
+        return authHeader ? authHeader.split(' ')[1] : null;
+    }
+
+    private throwUnauthorized(message: string): void {
+        throw new HttpException(message, HttpStatus.UNAUTHORIZED);
+    }
+
+    private async verifyToken(token: string): Promise<any> {
+        return this.jwtService.verifyAsync(token, {
+            secret: process.env.JWT_SECRET,
+        });
+    }
+
+    private isTokenExpired(decodedToken: any): boolean {
+        return Date.now() >= decodedToken.exp * 1000;
+    }
+
+    private async refreshToken(request: any, decodedToken: any): Promise<void> {
+        const userId = decodedToken.sub;
+        const user = await this.userRepository.findOne({ where: { id: userId } });
+
+        if (!user || !user.refreshToken) {
+            this.throwUnauthorized(Messages.TOKEN_INVALID);
+        }
+
+        try {
+            const newToken = await this.authService.generateAccessTokenFromRefreshToken(user.refreshToken);
+
+            if (newToken && newToken.accessToken) {
+                request.headers.authorization = `Bearer ${newToken.accessToken}`;
+
+                const sanitizedUser = this.sanitizeUser(user);
+                request.headers['user'] = sanitizedUser;
+            }
+        } catch (refreshTokenError) {
+            console.error('Error generating access token from refresh token:', refreshTokenError);
+            this.throwUnauthorized(refreshTokenError.message);
+        }
+    }
+
+    private async getUserFromToken(decodedToken: any): Promise<User | undefined> {
+        return this.userRepository.findOne({ where: { id: decodedToken.sub }, relations: ['roles'] });
+    }
+
+    private sanitizeUser(user: User): any {
+        return {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            roles: user.roles.map(role => role.name),
+            firstName: user.firstName,
+            lastName: user.lastName,
+        };
     }
 }

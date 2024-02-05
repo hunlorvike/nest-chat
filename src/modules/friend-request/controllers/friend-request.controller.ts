@@ -27,7 +27,6 @@ export class FriendRequestController {
 
     @Get()
     getFriendRequests(@GetUser() user: User) {
-        console.log(user);
         return this.friendRequestService.getFriendRequests(user.id);
     }
 

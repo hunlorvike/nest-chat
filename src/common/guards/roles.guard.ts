@@ -28,81 +28,92 @@ export class RolesGuard implements CanActivate {
 		}
 
 		const request = context.switchToHttp().getRequest();
-		const token = request.headers.authorization.split(' ')[1];
+		const token = this.extractTokenFromRequest(request);
 
 		if (!token) {
 			return false;
 		}
 
 		try {
-			const secretKey = process.env.JWT_SECRET || "aLongSecretStringWhoseBitnessIsEqualToOrGreaterThanTheBitnessOfTheTokenEncryptionAlgorithm";
-			const decodedToken = await this.jwtService.verifyAsync(token, {
-				secret: secretKey,
-			});
+			const decodedToken = await this.verifyToken(token);
 
 			if (!decodedToken || !decodedToken.role || !Array.isArray(decodedToken.role)) {
 				return false;
 			}
 
-			const isTokenExpired = Date.now() >= decodedToken.exp * 1000;
-
-			if (isTokenExpired) {
-				const username = decodedToken.sub;
-
-				const user = await this.userRepository.findOne({ where: { username: username } });
-
-				if (!user) {
-					return false;
-				}
-
-				const refreshToken = user.refreshToken;
-
-				if (refreshToken) {
-					try {
-						const newToken = await this.authService.generateAccessTokenFromRefreshToken(refreshToken);
-
-						if (newToken && newToken.accessToken) {
-							request.headers.authorization = `Bearer ${newToken.accessToken}`;
-
-							const sanitizedUser = {
-								id: user?.id,
-								username: user?.username,
-								email: user?.email,
-								roles: user?.roles,
-								firstName: user?.firstName,
-								lastName: user?.lastName,
-							};
-
-							request.headers['user'] = (sanitizedUser);
-							return true;
-						}
-					} catch (refreshTokenError) {
-						console.error('Error generating access token from refresh token:', refreshTokenError);
-					}
-				}
-
-				return false;
+			if (this.isTokenExpired(decodedToken)) {
+				await this.refreshToken(request, decodedToken);
 			}
 
 			const lowercaseRoles = roles.map((role) => role.toLowerCase());
 			const userRoles = decodedToken.role.map((role) => role.toLowerCase());
 
-			const user = await this.userRepository.findOne({ where: { id: decodedToken.sub } });
+			const user = await this.getUserFromToken(decodedToken);
 
-			const sanitizedUser = {
-				id: user?.id,
-				username: user?.username,
-				email: user?.email,
-				roles: user?.roles,
-				firstName: user?.firstName,
-				lastName: user?.lastName,
-			};
+			const sanitizedUser = this.sanitizeUser(user);
+			request.headers['user'] = sanitizedUser;
 
-			request.headers['user'] = (sanitizedUser);
-			return lowercaseRoles.some((role) => userRoles.includes(role));
+			return this.checkUserRoles(lowercaseRoles, userRoles);
 		} catch (error) {
 			console.error('Error validating token:', error);
 			return false;
 		}
+	}
+
+	private extractTokenFromRequest(request: any): string | null {
+		const authHeader = request.headers.authorization;
+		return authHeader ? authHeader.split(' ')[1] : null;
+	}
+
+	private async verifyToken(token: string): Promise<any> {
+		const secretKey = process.env.JWT_SECRET || "aLongSecretStringWhoseBitnessIsEqualToOrGreaterThanTheBitnessOfTheTokenEncryptionAlgorithm";
+		return this.jwtService.verifyAsync(token, {
+			secret: secretKey,
+		});
+	}
+
+	private isTokenExpired(decodedToken: any): boolean {
+		return Date.now() >= decodedToken.exp * 1000;
+	}
+
+	private async refreshToken(request: any, decodedToken: any): Promise<void> {
+		const userId = decodedToken.sub;
+		const user = await this.userRepository.findOne({ where: { id: userId } });
+
+		if (!user || !user.refreshToken) {
+			return;
+		}
+
+		try {
+			const newToken = await this.authService.generateAccessTokenFromRefreshToken(user.refreshToken);
+
+			if (newToken && newToken.accessToken) {
+				request.headers.authorization = `Bearer ${newToken.accessToken}`;
+
+				const sanitizedUser = this.sanitizeUser(user);
+				request.headers['user'] = sanitizedUser;
+			}
+		} catch (refreshTokenError) {
+			console.error('Error generating access token from refresh token:', refreshTokenError);
+		}
+	}
+
+	private async getUserFromToken(decodedToken: any): Promise<User | undefined> {
+		return this.userRepository.findOne({ where: { id: decodedToken.sub } });
+	}
+
+	private sanitizeUser(user: User): any {
+		return {
+			id: user?.id,
+			username: user?.username,
+			email: user?.email,
+			roles: user?.roles,
+			firstName: user?.firstName,
+			lastName: user?.lastName,
+		};
+	}
+
+	private checkUserRoles(lowercaseRoles: string[], userRoles: string[]): boolean {
+		return lowercaseRoles.some((role) => userRoles.includes(role));
 	}
 }

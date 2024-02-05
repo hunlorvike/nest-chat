@@ -32,7 +32,6 @@ export class ConversationController {
 
 	@Post()
 	async createConversation(@GetUser() user: User, @Body() createConversationDto: CreateConversationDto) {
-		console.log(user);
 		console.log(createConversationDto);
 
 		const conversation = await this.conversationService.createConversation(user, createConversationDto);

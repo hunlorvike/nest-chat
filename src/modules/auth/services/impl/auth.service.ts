@@ -76,7 +76,6 @@ export class AuthService implements IAuthService {
             if (!isPasswordValid) {
                 throw new HttpException(Messages.INCORRECT_PASSWORD, HttpStatus.UNAUTHORIZED);
             }
-            console.log(user);
             // Tạo AccessToken
             const { accessToken } = await this.generateAccessToken(user);
 
@@ -113,7 +112,6 @@ export class AuthService implements IAuthService {
     }
 
     async generateAccessToken(user: Partial<User>): Promise<{ accessToken: string }> {
-        console.log(user);
         if (user && user.roles && user.roles.length > 0) {
             const payload = {
                 sub: user.id,
