@@ -42,6 +42,7 @@ export enum ApiTagConfigs {
     CONVERSATION = 'Conversation',
     FRIEND = 'Friend',
     FRIEND_REQUEST = 'Friend Request',
+    MESSAGE = 'Message'
 }
 
 export enum ServerEvents {
@@ -50,3 +51,7 @@ export enum ServerEvents {
     FRIEND_REQUEST_CANCELLED = 'friendrequest.cancelled',
     FRIEND_REMOVED = 'friend.removed',
 }
+
+export const SUBFOLDER_IMAGES = 'images';
+export const SUBFOLDER_MESSAGE_ATTACHMENTS = 'message_attachments';
+export const SUBFOLDER_GROUP_MESSAGE_ATTACHMENTS = 'group_message_attachments';

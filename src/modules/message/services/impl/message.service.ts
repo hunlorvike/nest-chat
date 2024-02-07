@@ -61,11 +61,22 @@ export class MessageService implements IMessageService {
         return { message: savedMessage, conversation: updated };
     }
 
-    getMessages(conversationId: number): Promise<Message[]> {
-        return this.messageRepository.find({
-            relations: ['author', 'attachments', 'author.profile'],
-            where: { conversation: { id: conversationId } },
-            order: { createdAt: 'DESC' },
+    async getMessages(conversationId: number): Promise<Message[]> {
+        const messages = await this.messageRepository
+            .createQueryBuilder('message')
+            .select(['message.id', 'message.content', 'message.createdAt'])
+            .leftJoinAndSelect('message.author', 'author')
+            .where('message.conversationId = :conversationId', { conversationId })
+            .orderBy('message.createdAt', 'DESC')
+            .getMany();
+
+        return messages.map((message) => {
+            return {
+                id: message.id,
+                content: message.content,
+                createdAt: message.createdAt,
+                author: this.processUser(message.author),
+            } as Message;
         });
     }
 
@@ -121,9 +132,39 @@ export class MessageService implements IMessageService {
                 'author.profile',
             ],
         });
-        if (!messageDB)
+
+        if (!messageDB) {
             throw new HttpException('Cannot Edit Message', HttpStatus.BAD_REQUEST);
+        }
+
         messageDB.content = params.content;
-        return this.messageRepository.save(messageDB);
+
+        const updatedMessage = await this.messageRepository.save(messageDB);
+
+        return {
+            id: updatedMessage.id,
+            content: updatedMessage.content,
+            createdAt: updatedMessage.createdAt,
+            author: this.processUser(updatedMessage.author),
+            conversation: {
+                id: updatedMessage.conversation.id,
+                createdAt: updatedMessage.conversation.createdAt,
+                lastMessageSentAt: updatedMessage.conversation.lastMessageSentAt,
+                creator: this.processUser(updatedMessage.conversation.creator),
+                recipient: this.processUser(updatedMessage.conversation.recipient),
+            },
+        } as Message;
     }
+    
+    private processUser(user: any): any {
+        return {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            phone: user.phone,
+            firstName: user.firstName,
+            lastName: user.lastName,
+        };
+    }
+
 }
