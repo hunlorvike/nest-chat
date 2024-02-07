@@ -1,3 +1,7 @@
+import { GroupRecipientService } from './modules/group/services/impl/group-recipient.service';
+import { GroupMessageService } from './modules/group/services/impl/group-message.service';
+import { GroupModule } from './modules/group/group.module';
+import { ExistsModule } from './modules/exists/exists.module';
 import { ImageStoreModule } from './modules/image-storage/image-storage.module';
 import { MessageAttachmentModule } from './modules/message-attachment/message-attachment.module';
 import { MessageModule } from './modules/message/message.module';
@@ -25,8 +29,10 @@ dotenv.config();
 
 @Module({
 	imports: [
-        ImageStoreModule, 
-        MessageAttachmentModule, 
+		GroupModule,
+		ExistsModule,
+		ImageStoreModule,
+		MessageAttachmentModule,
 		MessageModule,
 		FriendRequestModule,
 		FriendModule,

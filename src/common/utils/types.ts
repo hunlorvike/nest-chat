@@ -7,6 +7,7 @@ import { GroupMessageAttachment } from "src/modules/message-attachment/entities/
 import { MessageAttachment } from "src/modules/message/entities/message-attachment.entity";
 import { Message } from "src/modules/message/entities/message.entity";
 import { User } from "src/modules/user/entities/user.entity";
+import { Request } from "express";  
 
 export type CreateUserDetails = {
 	username: string;

@@ -1,6 +1,6 @@
 import { ConversationService } from './services/impl/conversation.service';
 import { ConversationController } from './controllers/conversation.controller';
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { Services } from 'src/common/utils/constrants';
 import { UserModule } from '../user/user.module';
 import { JwtModule } from '@nestjs/jwt';
@@ -11,6 +11,8 @@ import { AuthService } from '../auth/services/impl/auth.service';
 import { Conversation } from './entities/conversation.entity';
 import { Message } from '../message/entities/message.entity';
 import { FriendModule } from '../friend/friend.module';
+import { isAuthorized } from 'src/common/utils/helpers';
+import { ConversationMiddleware } from './middlewares/conversation.middleware';
 
 @Module({
     imports: [
@@ -39,4 +41,10 @@ import { FriendModule } from '../friend/friend.module';
         },
     ]
 })
-export class ConversationModule { }
+export class ConversationModule implements NestModule{
+    configure(consumer: MiddlewareConsumer) {
+        consumer.apply(isAuthorized, ConversationMiddleware)
+        .forRoutes('conversation/:id')
+    } 
+
+}

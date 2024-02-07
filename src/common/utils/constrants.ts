@@ -42,7 +42,9 @@ export enum ApiTagConfigs {
     CONVERSATION = 'Conversation',
     FRIEND = 'Friend',
     FRIEND_REQUEST = 'Friend Request',
-    MESSAGE = 'Message'
+    MESSAGE = 'Message',
+    EXISTS = 'Exists',
+    GROUP = 'Group'
 }
 
 export enum ServerEvents {
