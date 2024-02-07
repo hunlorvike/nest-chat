@@ -44,7 +44,9 @@ export enum ApiTagConfigs {
     FRIEND_REQUEST = 'Friend Request',
     MESSAGE = 'Message',
     EXISTS = 'Exists',
-    GROUP = 'Group'
+    GROUP = 'Group',
+    GROUP_MESSAGE = 'Group Message',
+    GROUP_RECIPIENT = 'Group Recipient'
 }
 
 export enum ServerEvents {
