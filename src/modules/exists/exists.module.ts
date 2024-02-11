@@ -2,7 +2,7 @@
 https://docs.nestjs.com/modules
 */
 
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { ConversationModule } from '../conversations/conversation.module';
 import { UserModule } from '../user/user.module';
 import { ExistsController } from './exists.controller';
@@ -23,6 +23,7 @@ import { JwtModule } from '@nestjs/jwt';
     ],
     controllers: [ExistsController],
     providers: [
+        Logger,
         {
             provide: Services.AUTH,
             useClass: AuthService,

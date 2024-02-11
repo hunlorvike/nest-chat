@@ -1,6 +1,6 @@
 import { GroupService } from './services/impl/group.service';
 import { GroupController } from './controllers/group.controller';
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Logger, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from '../user/user.module';
 import { GroupMessage } from './entities/group-message.entity';
@@ -33,6 +33,7 @@ import { User } from '../user/entities/user.entity';
         GroupRecipientController
     ],
     providers: [
+        Logger,
         {
             provide: Services.GROUP,
             useClass: GroupService,

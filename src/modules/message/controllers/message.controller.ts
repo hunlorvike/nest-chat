@@ -1,11 +1,6 @@
-/*
-https://docs.nestjs.com/controllers#controllers
-*/
-
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Inject, Param, ParseIntPipe, Patch, Post, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Inject, Param, ParseIntPipe, Patch, Post, UploadedFiles, UseGuards, UseInterceptors, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { ApiTagConfigs, Routes, Services } from 'src/common/utils/constrants';
 import { Attachment } from 'src/common/utils/types';
 import { User } from 'src/modules/user/entities/user.entity';
@@ -26,6 +21,7 @@ export class MessageController {
     constructor(
         @Inject(Services.MESSAGE) private readonly messageService: IMessageService,
         private eventEmitter: EventEmitter2,
+        private readonly logger: Logger, 
     ) { }
 
     @ApiOperation({ summary: 'Create a new message' })
@@ -46,18 +42,23 @@ export class MessageController {
         @Param('id', ParseIntPipe) id: number,
         @Body() { content }: CreateMessageDto,
     ) {
-        const attachments = files?.attachments;
+        try {
+            const attachments = files?.attachments;
 
-        if (!attachments && !content) {
-            throw new HttpException('Attachments and content are empty', HttpStatus.BAD_REQUEST);
+            if (!attachments && !content) {
+                throw new HttpException('Attachments and content are empty', HttpStatus.BAD_REQUEST);
+            }
+
+            const params = { user, id, content, attachments };
+            const response = await this.messageService.createMessage(params);
+            this.eventEmitter.emit('message.create', response);
+            return {
+                data: response
+            };
+        } catch (error) {
+            this.logger.error(`Error in create message: ${error.message}`, error.stack, 'MessageController');
+            throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
         }
-
-        const params = { user, id, content, attachments };
-        const response = await this.messageService.createMessage(params);
-        this.eventEmitter.emit('message.create', response);
-        return {
-            data: response
-        };
     }
 
     @Get()
@@ -65,10 +66,15 @@ export class MessageController {
         @GetUser() user: User,
         @Param('id', ParseIntPipe) id: number,
     ) {
-        const messages = await this.messageService.getMessages(id);
-        return {
-            data: { id, messages }
-        };
+        try {
+            const messages = await this.messageService.getMessages(id);
+            return {
+                data: { id, messages }
+            };
+        } catch (error) {
+            this.logger.error(`Error in get messages from conversation: ${error.message}`, error.stack, 'MessageController');
+            throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Patch(':messageId')
@@ -78,10 +84,15 @@ export class MessageController {
         @Param('messageId') messageId: number,
         @Body() { content }: EditMessageDto,
     ) {
-        const params = { userId, content, conversationId, messageId };
-        const message = await this.messageService.editMessage(params);
-        this.eventEmitter.emit('message.update', message);
-        return { data: message };
+        try {
+            const params = { userId, content, conversationId, messageId };
+            const message = await this.messageService.editMessage(params);
+            this.eventEmitter.emit('message.update', message);
+            return { data: message };
+        } catch (error) {
+            this.logger.error(`Error in edit message: ${error.message}`, error.stack, 'MessageController');
+            throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
 
@@ -91,9 +102,14 @@ export class MessageController {
         @Param('id', ParseIntPipe) conversationId: number,
         @Param('messageId', ParseIntPipe) messageId: number,
     ) {
-        const params = { userId: user.id, conversationId, messageId };
-        await this.messageService.deleteMessage(params);
-        this.eventEmitter.emit('message.delete', params);
-        return { conversationId, messageId };
+        try {
+            const params = { userId: user.id, conversationId, messageId };
+            await this.messageService.deleteMessage(params);
+            this.eventEmitter.emit('message.delete', params);
+            return { conversationId, messageId };
+        } catch (error) {
+            this.logger.error(`Error in delete message from conversation: ${error.message}`, error.stack, 'MessageController');
+            throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

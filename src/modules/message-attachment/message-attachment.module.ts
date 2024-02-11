@@ -2,7 +2,7 @@
 https://docs.nestjs.com/modules
 */
 
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MessageAttachment } from '../message/entities/message-attachment.entity';
 import { GroupMessageAttachment } from './entities/group-message-attachment.entity';
@@ -16,6 +16,7 @@ import { MessageAttachmentService } from './services/impl/message-attach.service
         ImageStoreModule
     ],
     providers: [
+        Logger,
         {
             provide: Services.MESSAGE_ATTACHMENT,
             useClass: MessageAttachmentService,

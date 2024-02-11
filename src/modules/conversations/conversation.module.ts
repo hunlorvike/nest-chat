@@ -1,6 +1,6 @@
 import { ConversationService } from './services/impl/conversation.service';
 import { ConversationController } from './controllers/conversation.controller';
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { Logger, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { Services } from 'src/common/utils/constrants';
 import { UserModule } from '../user/user.module';
 import { JwtModule } from '@nestjs/jwt';
@@ -25,6 +25,7 @@ import { ConversationMiddleware } from './middlewares/conversation.middleware';
         ConversationController
     ],
     providers: [
+        Logger,
         {
             provide: Services.CONVERSATION,
             useClass: ConversationService

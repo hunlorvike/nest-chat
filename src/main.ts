@@ -4,16 +4,21 @@ import * as dotenv from 'dotenv'
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { join } from 'path';
 import { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
-import { ValidationPipe } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
 dotenv.config()
 
+const logger = new Logger('App');
+
+
 async function bootstrap() {
 	const { PORT, APP_PREFIX, APP_NAME, VERSION } = process.env
 
 	const app = await NestFactory.create<NestApplication>(AppModule);
+
+	app.useLogger(logger);
 
 	app.useGlobalInterceptors(new ResponseInterceptor());
 

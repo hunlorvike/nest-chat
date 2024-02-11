@@ -1,6 +1,4 @@
-
-
-import { Body, Controller, Delete, Inject, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Inject, Param, ParseIntPipe, Post, UseGuards, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ApiTagConfigs, Routes, Services } from 'src/common/utils/constrants';
 import { User } from 'src/modules/user/entities/user.entity';
@@ -20,7 +18,8 @@ export class GroupRecipientController {
     constructor(
         @Inject(Services.GROUP_RECIPIENT)
         private readonly groupRecipientService: IGroupRecipientService,
-        private eventEmitter: EventEmitter2,
+        private readonly eventEmitter: EventEmitter2,
+        private readonly logger: Logger, 
     ) { }
 
     @Post()
@@ -29,29 +28,39 @@ export class GroupRecipientController {
         @Param('id', ParseIntPipe) id: number,
         @Body() { username }: AddGroupRecipientDto,
     ) {
-        const params = { id, userId, username };
-        const response = await this.groupRecipientService.addGroupRecipient(params);
-        this.eventEmitter.emit('group.user.add', response);
-        return response;
+        try {
+            const params = { id, userId, username };
+            const response = await this.groupRecipientService.addGroupRecipient(params);
+            this.eventEmitter.emit('group.user.add', response);
+            return response;
+        } catch (error) {
+            if (error instanceof HttpException) {
+                throw error;
+            }
+            this.logger.error(`Error in add group recipient: ${error.message}`, error.stack, 'GroupRecipientController');
+            throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-    /**
-     * Leaves a Group
-     * @param user the authenticated User
-     * @param groupId the id of the group
-     * @returns the updated Group that the user had left
-     */
     @Delete('leave')
     async leaveGroup(
         @GetUser() user: User,
         @Param('id', ParseIntPipe) groupId: number,
     ) {
-        const group = await this.groupRecipientService.leaveGroup({
-            id: groupId,
-            userId: user.id,
-        });
-        this.eventEmitter.emit('group.user.leave', { group, userId: user.id });
-        return group;
+        try {
+            const group = await this.groupRecipientService.leaveGroup({
+                id: groupId,
+                userId: user.id,
+            });
+            this.eventEmitter.emit('group.user.leave', { group, userId: user.id });
+            return group;
+        } catch (error) {
+            if (error instanceof HttpException) {
+                throw error;
+            }
+            this.logger.error(`Error in leave group: ${error.message}`, error.stack, 'GroupRecipientController');
+            throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Delete(':userId')
@@ -60,11 +69,17 @@ export class GroupRecipientController {
         @Param('id', ParseIntPipe) id: number,
         @Param('userId', ParseIntPipe) removeUserId: number,
     ) {
-        const params = { issuerId, id, removeUserId };
-        const response = await this.groupRecipientService.removeGroupRecipient(
-            params,
-        );
-        this.eventEmitter.emit('group.user.remove', response);
-        return response.group;
+        try {
+            const params = { issuerId, id, removeUserId };
+            const response = await this.groupRecipientService.removeGroupRecipient(params);
+            this.eventEmitter.emit('group.user.remove', response);
+            return response.group;
+        } catch (error) {
+            if (error instanceof HttpException) {
+                throw error;
+            }
+            this.logger.error(`Error in remove group recipient: ${error.message}`, error.stack, 'GroupRecipientController');
+            throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

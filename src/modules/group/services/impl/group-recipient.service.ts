@@ -1,7 +1,6 @@
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { IGroupRecipientService } from '../interface-group-recipient.service';
 import { AddGroupRecipientParams, AddGroupUserResponse, RemoveGroupRecipientParams, RemoveGroupUserResponse, LeaveGroupParams, CheckUserGroupParams } from 'src/common/utils/types';
-import { Group } from '../../entities/group.entity';
 import { Services } from 'src/common/utils/constrants';
 import { IUserService } from 'src/modules/user/services/interface-user.service';
 import { IGroupService } from '../interface-group.service';
@@ -11,6 +10,7 @@ export class GroupRecipientService implements IGroupRecipientService {
     constructor(
         @Inject(Services.USER) private userService: IUserService,
         @Inject(Services.GROUP) private groupService: IGroupService,
+        private readonly logger: Logger, 
     ) { }
 
     async addGroupRecipient(params: AddGroupRecipientParams) {
@@ -47,9 +47,11 @@ export class GroupRecipientService implements IGroupRecipientService {
             if (error instanceof HttpException) {
                 throw error;
             }
+            this.logger.error(`Error in add group recipient: ${error.message}`, error.stack, 'GroupRecipientService');
             throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
     async removeGroupRecipient(params: RemoveGroupRecipientParams) {
         try {
             const { issuerId, removeUserId, id } = params;
@@ -88,6 +90,7 @@ export class GroupRecipientService implements IGroupRecipientService {
             if (error instanceof HttpException) {
                 throw error;
             }
+            this.logger.error(`Error in remove group recipient: ${error.message}`, error.stack, 'GroupRecipientService');
             throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -109,21 +112,30 @@ export class GroupRecipientService implements IGroupRecipientService {
             if (error instanceof HttpException) {
                 throw error;
             }
+            this.logger.error(`Error in check user in group: ${error.message}`, error.stack, 'GroupRecipientService');
             throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     async leaveGroup({ id, userId }: LeaveGroupParams) {
-        const group = await this.isUserInGroup({ id, userId });
-        console.log(`Updating Groups`);
-        if (group.owner.id === userId)
-            throw new HttpException(
-                'Cannot leave group as owner',
-                HttpStatus.BAD_REQUEST,
-            );
-        console.log('New Users in Group after leaving...');
-        console.log(group.users.filter((user) => user.id !== userId));
-        group.users = group.users.filter((user) => user.id !== userId);
-        return this.groupService.saveGroup(group);
+        try {
+            const group = await this.isUserInGroup({ id, userId });
+            console.log(`Updating Groups`);
+            if (group.owner.id === userId)
+                throw new HttpException(
+                    'Cannot leave group as owner',
+                    HttpStatus.BAD_REQUEST,
+                );
+            console.log('New Users in Group after leaving...');
+            console.log(group.users.filter((user) => user.id !== userId));
+            group.users = group.users.filter((user) => user.id !== userId);
+            return this.groupService.saveGroup(group);
+        } catch (error) {
+            if (error instanceof HttpException) {
+                throw error;
+            }
+            this.logger.error(`Error in leave group: ${error.message}`, error.stack, 'GroupRecipientService');
+            throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

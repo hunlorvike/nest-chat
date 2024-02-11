@@ -1,6 +1,6 @@
-import { Body, Controller, Delete, Get, Inject, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, ExecutionContext, Get, Inject, Param, ParseIntPipe, Patch, Post, UseGuards, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiCreatedResponse, ApiParam, ApiNoContentResponse } from '@nestjs/swagger'; // Import Swagger decorators
+import { ApiTags, ApiBearerAuth, ApiOkResponse, ApiCreatedResponse, ApiParam, ApiNoContentResponse, ApiNotFoundResponse } from '@nestjs/swagger';
 import { ApiTagConfigs, Routes, ServerEvents, Services } from 'src/common/utils/constrants';
 import { IFriendRequestService } from '../services/interface-friend-request.service';
 import { User } from 'src/modules/user/entities/user.entity';
@@ -8,6 +8,7 @@ import { GetUser } from '../../../common/decorators/get-user.decorator';
 import { CreateFriendDto } from '../dtos/create-friend.dto';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { JwtGuard } from 'src/common/guards/jwt.guard';
+import { HttpException, HttpStatus } from '@nestjs/common';
 
 @ApiTags(ApiTagConfigs.FRIEND_REQUEST)
 @ApiBearerAuth()
@@ -19,12 +20,18 @@ export class FriendRequestController {
     @Inject(Services.FRIEND_REQUEST_SERVICE)
     private readonly friendRequestService: IFriendRequestService,
     private event: EventEmitter2,
+    private readonly logger: Logger, 
   ) { }
 
   @Get()
   @ApiOkResponse({ description: 'Returns a list of friend requests for the authenticated user' })
-  getFriendRequests(@GetUser() user: User) {
-    return this.friendRequestService.getFriendRequests(user.id);
+  async getFriendRequests(@GetUser() user: User) {
+    try {
+      return this.friendRequestService.getFriendRequests(user.id);
+    } catch (error) {
+      this.logger.error(`Error in getFriendRequests: ${error.message}`, error.stack, 'FriendRequestController');
+      throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Post()
@@ -33,10 +40,15 @@ export class FriendRequestController {
     @GetUser() user: User,
     @Body() { username }: CreateFriendDto,
   ) {
-    const params = { user, username };
-    const friendRequest = await this.friendRequestService.create(params);
-    this.event.emit('friendrequest.create', friendRequest);
-    return friendRequest;
+    try {
+      const params = { user, username };
+      const friendRequest = await this.friendRequestService.create(params);
+      this.event.emit('friendrequest.create', friendRequest);
+      return friendRequest;
+    } catch (error) {
+      this.logger.error(`Error in createFriendRequest: ${error.message}`, error.stack, 'FriendRequestController');
+      throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Patch(':id/accept')
@@ -46,9 +58,14 @@ export class FriendRequestController {
     @GetUser() { id: userId }: User,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    const response = await this.friendRequestService.accept({ id, userId });
-    this.event.emit(ServerEvents.FRIEND_REQUEST_ACCEPTED, response);
-    return response;
+    try {
+      const response = await this.friendRequestService.accept({ id, userId });
+      this.event.emit(ServerEvents.FRIEND_REQUEST_ACCEPTED, response);
+      return response;
+    } catch (error) {
+      this.logger.error(`Error in acceptFriendRequest: ${error.message}`, error.stack, 'FriendRequestController');
+      throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Delete(':id/cancel')
@@ -58,9 +75,14 @@ export class FriendRequestController {
     @GetUser() { id: userId }: User,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    const response = await this.friendRequestService.cancel({ id, userId });
-    this.event.emit('friendrequest.cancel', response);
-    return response;
+    try {
+      const response = await this.friendRequestService.cancel({ id, userId });
+      this.event.emit('friendrequest.cancel', response);
+      return response;
+    } catch (error) {
+      this.logger.error(`Error in cancelFriendRequest: ${error.message}`, error.stack, 'FriendRequestController');
+      throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @Patch(':id/reject')
@@ -70,8 +92,13 @@ export class FriendRequestController {
     @GetUser() { id: userId }: User,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    const response = await this.friendRequestService.reject({ id, userId });
-    this.event.emit(ServerEvents.FRIEND_REQUEST_REJECTED, response);
-    return response;
+    try {
+      const response = await this.friendRequestService.reject({ id, userId });
+      this.event.emit(ServerEvents.FRIEND_REQUEST_REJECTED, response);
+      return response;
+    } catch (error) {
+      this.logger.error(`Error in rejectFriendRequest: ${error.message}`, error.stack, 'FriendRequestController');
+      throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 }

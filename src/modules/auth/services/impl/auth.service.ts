@@ -55,7 +55,6 @@ export class AuthService implements IAuthService {
 
     async signIn(userCredentials: ValidateUserDetails): Promise<{ accessToken: string }> {
         try {
-            // Lấy thông tin người dùng từ tên người dùng
             const user = await this.userRepository.findOne(
                 {
                     where: { username: userCredentials.username },
@@ -67,7 +66,6 @@ export class AuthService implements IAuthService {
                 throw new HttpException(Messages.USER_NOT_FOUND, HttpStatus.UNAUTHORIZED);
             }
 
-            // Kiểm tra mật khẩu
             const isPasswordValid = await compareHash(
                 userCredentials.password,
                 user.password,

@@ -3,7 +3,7 @@ import { FriendRequestController } from './controllers/friend-request.controller
 https://docs.nestjs.com/modules
 */
 
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Friend } from '../friend/entities/friend.entity';
 import { FriendRequest } from './entities/friend-request.entity';
@@ -27,6 +27,7 @@ import { User } from '../user/entities/user.entity';
         FriendRequestController,
     ],
     providers: [
+        Logger,
         {
             provide: Services.FRIEND_REQUEST_SERVICE,
             useClass: FriendRequestService,

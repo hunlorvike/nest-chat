@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { IConversationService } from '../interface-conversation.service';
 import { AccessParams, CreateConversationParams, GetConversationMessagesParams } from 'src/common/utils/types';
 import { User } from 'src/modules/user/entities/user.entity';
@@ -18,6 +18,7 @@ export class ConversationService implements IConversationService {
         @InjectRepository(Message) private readonly messageRepository: Repository<Message>,
         @Inject(Services.USER) private readonly userService: IUserService,
         @Inject(Services.FRIEND_SERVICE) private readonly friendsService: IFriendService,
+        private readonly logger: Logger, // Thêm Logger vào constructor
     ) { }
 
     async createConversation(user: User, conversationParams: CreateConversationParams) {
@@ -69,24 +70,58 @@ export class ConversationService implements IConversationService {
 
             return conversation;
         } catch (error) {
-            console.error(`${Messages.CREATE_CONVERSATION_ERROR}: ${error.message}`);
+            this.logger.error(`Error in createConversation: ${error.message}`, error.stack, 'ConversationService');
             throw error;
         }
     }
 
     async getConversations(user: User): Promise<Conversation[]> {
-        const conversations = await this.conversationRepository
-            .createQueryBuilder('conversation')
-            .leftJoinAndSelect('conversation.lastMessageSent', 'lastMessageSent')
-            .leftJoinAndSelect('conversation.creator', 'creator')
-            .leftJoinAndSelect('conversation.recipient', 'recipient')
-            .leftJoinAndSelect('creator.peer', 'creatorPeer')
-            .leftJoinAndSelect('recipient.peer', 'recipientPeer')
-            .andWhere('(creator.id = :id OR recipient.id = :id)', { id: user.id })
-            .orderBy('conversation.lastMessageSentAt', 'DESC')
-            .getMany();
+        try {
+            const conversations = await this.conversationRepository
+                .createQueryBuilder('conversation')
+                .leftJoinAndSelect('conversation.lastMessageSent', 'lastMessageSent')
+                .leftJoinAndSelect('conversation.creator', 'creator')
+                .leftJoinAndSelect('conversation.recipient', 'recipient')
+                .leftJoinAndSelect('creator.peer', 'creatorPeer')
+                .leftJoinAndSelect('recipient.peer', 'recipientPeer')
+                .andWhere('(creator.id = :id OR recipient.id = :id)', { id: user.id })
+                .orderBy('conversation.lastMessageSentAt', 'DESC')
+                .getMany();
 
-        const processedConversations = conversations.map((conversation) => {
+            const processedConversations = conversations.map((conversation) => {
+                return {
+                    id: conversation.id,
+                    creator: this.processUser(conversation.creator),
+                    recipient: this.processUser(conversation.recipient),
+                    lastMessageSent: conversation.lastMessageSent,
+                    createdAt: conversation.createdAt,
+                    lastMessageSentAt: conversation.lastMessageSentAt,
+                } as Conversation;
+            });
+
+            return processedConversations;
+        } catch (error) {
+            this.logger.error(`Error in getConversations: ${error.message}`, error.stack, 'ConversationService');
+            throw error;
+        }
+    }
+
+    async findById(id: number): Promise<Conversation | null> {
+        try {
+            const conversation = await this.conversationRepository
+                .createQueryBuilder('conversation')
+                .leftJoinAndSelect('conversation.lastMessageSent', 'lastMessageSent')
+                .leftJoinAndSelect('conversation.creator', 'creator')
+                .leftJoinAndSelect('conversation.recipient', 'recipient')
+                .leftJoinAndSelect('creator.profile', 'creatorProfile')
+                .leftJoinAndSelect('recipient.profile', 'recipientProfile')
+                .where('conversation.id = :id', { id })
+                .getOne();
+
+            if (!conversation) {
+                return null;
+            }
+
             return {
                 id: conversation.id,
                 creator: this.processUser(conversation.creator),
@@ -95,64 +130,54 @@ export class ConversationService implements IConversationService {
                 createdAt: conversation.createdAt,
                 lastMessageSentAt: conversation.lastMessageSentAt,
             } as Conversation;
-        });
-
-        return processedConversations;
-    }
-
-    async findById(id: number): Promise<Conversation | null> {
-        const conversation = await this.conversationRepository
-            .createQueryBuilder('conversation')
-            .leftJoinAndSelect('conversation.lastMessageSent', 'lastMessageSent')
-            .leftJoinAndSelect('conversation.creator', 'creator')
-            .leftJoinAndSelect('conversation.recipient', 'recipient')
-            .leftJoinAndSelect('creator.profile', 'creatorProfile')
-            .leftJoinAndSelect('recipient.profile', 'recipientProfile')
-            .where('conversation.id = :id', { id })
-            .getOne();
-
-        if (!conversation) {
-            return null;
+        } catch (error) {
+            this.logger.error(`Error in findById: ${error.message}`, error.stack, 'ConversationService');
+            throw error;
         }
-
-        return {
-            id: conversation.id,
-            creator: this.processUser(conversation.creator),
-            recipient: this.processUser(conversation.recipient),
-            lastMessageSent: conversation.lastMessageSent,
-            createdAt: conversation.createdAt,
-            lastMessageSentAt: conversation.lastMessageSentAt,
-        } as Conversation;
     }
 
     async hasAccess(params: AccessParams): Promise<boolean> {
-        const conversation = await this.findById(params.id);
-        if (!conversation) {
-            throw new HttpException('Conversation not found', HttpStatus.NOT_FOUND);
-
+        try {
+            const conversation = await this.findById(params.id);
+            if (!conversation) {
+                throw new HttpException('Conversation not found', HttpStatus.NOT_FOUND);
+            }
+            return (
+                conversation.creator.id === params.userId || conversation.recipient.id === params.userId
+            );
+        } catch (error) {
+            this.logger.error(`Error in hasAccess: ${error.message}`, error.stack, 'ConversationService');
+            throw error;
         }
-        return (
-            conversation.creator.id === params.userId || conversation.recipient.id === params.userId
-        );
     }
 
     isCreated(userId: number, recipienId: number): Promise<Conversation> {
-        return this.conversationRepository.findOne({
-            where: [
-                {
-                    creator: { id: userId },
-                    recipient: { id: recipienId },
-                },
-                {
-                    creator: { id: recipienId },
-                    recipient: { id: userId },
-                }
-            ]
-        })
+        try {
+            return this.conversationRepository.findOne({
+                where: [
+                    {
+                        creator: { id: userId },
+                        recipient: { id: recipienId },
+                    },
+                    {
+                        creator: { id: recipienId },
+                        recipient: { id: userId },
+                    }
+                ]
+            });
+        } catch (error) {
+            this.logger.error(`Error in isCreated: ${error.message}`, error.stack, 'ConversationService');
+            throw error;
+        }
     }
 
     save(conversation: Conversation): Promise<Conversation> {
-        return this.conversationRepository.save(conversation);
+        try {
+            return this.conversationRepository.save(conversation);
+        } catch (error) {
+            this.logger.error(`Error in save: ${error.message}`, error.stack, 'ConversationService');
+            throw error;
+        }
     }
 
     async getMessages(params: GetConversationMessagesParams): Promise<Conversation> {
@@ -172,15 +197,19 @@ export class ConversationService implements IConversationService {
 
             return conversation;
         } catch (error) {
-            console.error(`${Messages.GET_MESSAGES_ERROR}: ${error.message}`);
+            this.logger.error(`Error in getMessages: ${error.message}`, error.stack, 'ConversationService');
             throw error;
         }
     }
 
     update(params: Partial<{ id: number; lastMessageSent: Message; }>) {
-        return this.conversationRepository.update(params.id, { lastMessageSent: params.lastMessageSent })
+        try {
+            return this.conversationRepository.update(params.id, { lastMessageSent: params.lastMessageSent });
+        } catch (error) {
+            this.logger.error(`Error in update: ${error.message}`, error.stack, 'ConversationService');
+            throw error;
+        }
     }
-
 
     private processUser(user: any): any {
         return {
@@ -192,5 +221,4 @@ export class ConversationService implements IConversationService {
             lastName: user.lastName,
         };
     }
-
 }

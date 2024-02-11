@@ -1,7 +1,7 @@
 import { DeleteFriendRequestParams } from "src/common/utils/types";
 import { Friend } from "../../entities/friend.entity";
 import { IFriendService } from "../interface-friend.service";
-import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository, Transaction } from "typeorm";
 
@@ -10,42 +10,53 @@ export class FriendService implements IFriendService {
     constructor(
         @InjectRepository(Friend)
         private readonly friendsRepository: Repository<Friend>,
+        private readonly logger: Logger,
     ) { }
 
     async getFriends(id: number): Promise<Friend[]> {
-        const friends = await this.friendsRepository
-            .createQueryBuilder('friend')
-            .leftJoinAndSelect('friend.sender', 'sender')
-            .leftJoinAndSelect('friend.receiver', 'receiver')
-            .leftJoinAndSelect('sender.profile', 'senderProfile')
-            .leftJoinAndSelect('receiver.profile', 'receiverProfile')
-            .leftJoinAndSelect('sender.presence', 'senderPresence')
-            .leftJoinAndSelect('receiver.presence', 'receiverPresence')
-            .where('sender.id = :id OR receiver.id = :id', { id })
-            .getMany();
+        try {
+            const friends = await this.friendsRepository
+                .createQueryBuilder('friend')
+                .leftJoinAndSelect('friend.sender', 'sender')
+                .leftJoinAndSelect('friend.receiver', 'receiver')
+                .leftJoinAndSelect('sender.profile', 'senderProfile')
+                .leftJoinAndSelect('receiver.profile', 'receiverProfile')
+                .leftJoinAndSelect('sender.presence', 'senderPresence')
+                .leftJoinAndSelect('receiver.presence', 'receiverPresence')
+                .where('sender.id = :id OR receiver.id = :id', { id })
+                .getMany();
 
-        const processedFriends = friends.map((friend) => ({
-            id: friend.id,
-            sender: this.processUser(friend.sender),
-            receiver: this.processUser(friend.receiver),
-            createdAt: friend.createdAt,
-        }));
+            const processedFriends = friends.map((friend) => ({
+                id: friend.id,
+                sender: this.processUser(friend.sender),
+                receiver: this.processUser(friend.receiver),
+                createdAt: friend.createdAt,
+            }));
 
-        return processedFriends;
+            return processedFriends;
+        } catch (error) {
+            this.logger.error(`Error in getFriends: ${error.message}`, error.stack, 'FriendService');
+            throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     async findFriendById(id: number): Promise<Friend> {
-        return this.friendsRepository.findOne({
-            where: { id },
-            relations: [
-                'sender',
-                'receiver',
-                'sender.profile',
-                'sender.presence',
-                'receiver.profile',
-                'receiver.presence',
-            ],
-        });
+        try {
+            return this.friendsRepository.findOne({
+                where: { id },
+                relations: [
+                    'sender',
+                    'receiver',
+                    'sender.profile',
+                    'sender.presence',
+                    'receiver.profile',
+                    'receiver.presence',
+                ],
+            });
+        } catch (error) {
+            this.logger.error(`Error in findFriendById: ${error.message}`, error.stack, 'FriendService');
+            throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     async deleteFriend({ id, userId }: DeleteFriendRequestParams): Promise<Friend> {
@@ -63,24 +74,29 @@ export class FriendService implements IFriendService {
             await this.friendsRepository.delete(id);
             return friend;
         } catch (error) {
-            console.error(`Error deleting friend: ${error.message}`);
+            this.logger.error(`Error in deleteFriend: ${error.message}`, error.stack, 'FriendService');
             throw new HttpException("Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     async isFriends(userOneId: number, userTwoId: number): Promise<Friend | undefined> {
-        return this.friendsRepository.findOne({
-            where: [
-                {
-                    sender: { id: userOneId },
-                    receiver: { id: userTwoId },
-                },
-                {
-                    sender: { id: userTwoId },
-                    receiver: { id: userOneId },
-                },
-            ],
-        });
+        try {
+            return this.friendsRepository.findOne({
+                where: [
+                    {
+                        sender: { id: userOneId },
+                        receiver: { id: userTwoId },
+                    },
+                    {
+                        sender: { id: userTwoId },
+                        receiver: { id: userOneId },
+                    },
+                ],
+            });
+        } catch (error) {
+            this.logger.error(`Error in isFriends: ${error.message}`, error.stack, 'FriendService');
+            throw new HttpException('Internal Server Error', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     private processUser(user: any): any {

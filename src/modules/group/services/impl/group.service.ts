@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { IGroupService } from '../interface-group.service';
 import { CreateGroupParams, FetchGroupsParams, AccessParams, TransferOwnerParams, UpdateGroupDetailsParams } from 'src/common/utils/types';
 import { User } from 'src/modules/user/entities/user.entity';
@@ -15,7 +15,8 @@ export class GroupService implements IGroupService {
     constructor(
         @InjectRepository(Group) private readonly groupRepository: Repository<Group>,
         @Inject(Services.USER) private readonly userService: IUserService,
-        @Inject(Services.IMAGE_UPLOAD_SERVICE) private readonly imageStorageService: IImageStorageService
+        @Inject(Services.IMAGE_UPLOAD_SERVICE) private readonly imageStorageService: IImageStorageService,
+        private readonly logger: Logger,
     ) { }
 
     async createGroup(params: CreateGroupParams) {
@@ -30,6 +31,7 @@ export class GroupService implements IGroupService {
             const group = this.groupRepository.create(groupParams);
             return this.groupRepository.save(group);
         } catch (error) {
+            this.logger.error(`Error in create group: ${error.message}`, error.stack, 'GroupService');
             throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -49,26 +51,37 @@ export class GroupService implements IGroupService {
                 .orderBy('group.lastMessageSentAt', 'DESC')
                 .getMany();
         } catch (error) {
+            this.logger.error(`Error in get groups: ${error.message}`, error.stack, 'GroupService');
             throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     findGroupById(id: number): Promise<Group> {
-        return this.groupRepository.findOne({
-            where: { id },
-            relations: [
-                'creator',
-                'users',
-                'lastMessageSent',
-                'owner',
-                'users.profile',
-                'users.presence',
-            ],
-        });
+        try {
+            return this.groupRepository.findOne({
+                where: { id },
+                relations: [
+                    'creator',
+                    'users',
+                    'lastMessageSent',
+                    'owner',
+                    'users.profile',
+                    'users.presence',
+                ],
+            });
+        } catch (error) {
+            this.logger.error(`Error in find group by id: ${error.message}`, error.stack, 'GroupService');
+            throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     saveGroup(group: Group): Promise<Group> {
-        return this.groupRepository.save(group);
+        try {
+            return this.groupRepository.save(group);
+        } catch (error) {
+            this.logger.error(`Error in save group: ${error.message}`, error.stack, 'GroupService');
+            throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     async hasAccess({ id, userId }: AccessParams): Promise<User | undefined> {
@@ -77,6 +90,7 @@ export class GroupService implements IGroupService {
             if (!group) throw new HttpException('Group not found', HttpStatus.NOT_FOUND);
             return group.users.find((user) => user.id === userId);
         } catch (error) {
+            this.logger.error(`Error in has access: ${error.message}`, error.stack, 'GroupService');
             throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -100,6 +114,7 @@ export class GroupService implements IGroupService {
             group.owner = newOwner;
             return this.groupRepository.save(group);
         } catch (error) {
+            this.logger.error(`Error in transfer group owner: ${error.message}`, error.stack, 'GroupService');
             throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -116,6 +131,7 @@ export class GroupService implements IGroupService {
             group.title = params.title ?? group.title;
             return this.groupRepository.save(group);
         } catch (error) {
+            this.logger.error(`Error in update group details: ${error.message}`, error.stack, 'GroupService');
             throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }

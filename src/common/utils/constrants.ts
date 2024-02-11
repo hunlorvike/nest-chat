@@ -1,3 +1,5 @@
+import { MulterField } from "@nestjs/platform-express/multer/interfaces/multer-options.interface";
+
 export enum Routes {
     AUTH = 'auth',
     USER = 'user',
@@ -59,3 +61,15 @@ export enum ServerEvents {
 export const SUBFOLDER_IMAGES = 'images';
 export const SUBFOLDER_MESSAGE_ATTACHMENTS = 'message_attachments';
 export const SUBFOLDER_GROUP_MESSAGE_ATTACHMENTS = 'group_message_attachments';
+
+
+export const UserProfileFileFields: MulterField[] = [
+    {
+        name: 'banner',
+        maxCount: 1,
+    },
+    {
+        name: 'avatar',
+        maxCount: 1,
+    },
+];

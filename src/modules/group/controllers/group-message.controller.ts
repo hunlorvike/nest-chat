@@ -1,5 +1,4 @@
-
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Inject, Param, ParseIntPipe, Patch, Post, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Inject, Param, ParseIntPipe, Patch, Post, UploadedFiles, UseGuards, UseInterceptors, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { SkipThrottle } from '@nestjs/throttler';
@@ -24,6 +23,7 @@ export class GroupMessageController {
         @Inject(Services.GROUP_MESSAGE)
         private readonly groupMessageService: IGroupMessageService,
         private readonly eventEmitter: EventEmitter2,
+        private readonly logger: Logger, 
     ) { }
 
     @UseInterceptors(
@@ -56,6 +56,7 @@ export class GroupMessageController {
             if (error instanceof HttpException) {
                 throw error;
             }
+            this.logger.error(`Error in create group message: ${error.message}`, error.stack, 'GroupMessageController');
             throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -66,9 +67,14 @@ export class GroupMessageController {
         @GetUser() user: User,
         @Param('id', ParseIntPipe) id: number,
     ) {
-        console.log(`Fetching GroupMessages for Group Id: ${id}`);
-        const messages = await this.groupMessageService.getGroupMessages(id);
-        return { id, messages };
+        try {
+            console.log(`Fetching GroupMessages for Group Id: ${id}`);
+            const messages = await this.groupMessageService.getGroupMessages(id);
+            return { id, messages };
+        } catch (error) {
+            this.logger.error(`Error in get group messages: ${error.message}`, error.stack, 'GroupMessageController');
+            throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Delete(':messageId')
@@ -78,17 +84,22 @@ export class GroupMessageController {
         @Param('id', ParseIntPipe) groupId: number,
         @Param('messageId', ParseIntPipe) messageId: number,
     ) {
-        await this.groupMessageService.deleteGroupMessage({
-            userId: user.id,
-            groupId,
-            messageId,
-        });
-        this.eventEmitter.emit('group.message.delete', {
-            userId: user.id,
-            messageId,
-            groupId,
-        });
-        return { groupId, messageId };
+        try {
+            await this.groupMessageService.deleteGroupMessage({
+                userId: user.id,
+                groupId,
+                messageId,
+            });
+            this.eventEmitter.emit('group.message.delete', {
+                userId: user.id,
+                messageId,
+                groupId,
+            });
+            return { groupId, messageId };
+        } catch (error) {
+            this.logger.error(`Error in delete group message: ${error.message}`, error.stack, 'GroupMessageController');
+            throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Patch(':messageId')
@@ -99,9 +110,14 @@ export class GroupMessageController {
         @Param('messageId', ParseIntPipe) messageId: number,
         @Body() { content }: EditMessageDto,
     ) {
-        const params = { userId, content, groupId, messageId };
-        const message = await this.groupMessageService.editGroupMessage(params);
-        this.eventEmitter.emit('group.message.update', message);
-        return message;
+        try {
+            const params = { userId, content, groupId, messageId };
+            const message = await this.groupMessageService.editGroupMessage(params);
+            this.eventEmitter.emit('group.message.update', message);
+            return message;
+        } catch (error) {
+            this.logger.error(`Error in edit group message: ${error.message}`, error.stack, 'GroupMessageController');
+            throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

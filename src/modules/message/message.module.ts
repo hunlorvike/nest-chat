@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { forwardRef, Logger, Module } from '@nestjs/common';
 import { MessageService } from './services/impl/message.service';
 import { ImageStoreModule } from '../image-storage/image-storage.module';
 import { MessageAttachmentModule } from '../message-attachment/message-attachment.module';
@@ -29,6 +29,7 @@ import { UserModule } from '../user/user.module';
     ],
     controllers: [MessageController],
     providers: [
+        Logger,
         {
             provide: Services.AUTH,
             useClass: AuthService,

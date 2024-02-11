@@ -1,4 +1,4 @@
-import { Controller, Get, HttpException, HttpStatus, Inject, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpException, HttpStatus, Inject, Param, ParseIntPipe, UseGuards, Logger } from '@nestjs/common';
 import { ApiTagConfigs, Routes, Services } from 'src/common/utils/constrants';
 import { IConversationService } from '../conversations/services/interface-conversation.service';
 import { IUserService } from '../user/services/interface-user.service';
@@ -18,7 +18,8 @@ export class ExistsController {
     constructor(
         @Inject(Services.CONVERSATION) private readonly conversationService: IConversationService,
         @Inject(Services.USER) private readonly userService: IUserService,
-        private readonly events: EventEmitter2
+        private readonly events: EventEmitter2,
+        private readonly logger: Logger, 
     ) { }
 
     @Get('conversations/:recipientId')
@@ -26,25 +27,30 @@ export class ExistsController {
         @GetUser() user: User,
         @Param('recipientId', ParseIntPipe) recipientId: number,
     ) {
-        const conversation = await this.conversationService.isCreated(recipientId, user.id);
+        try {
+            const conversation = await this.conversationService.isCreated(recipientId, user.id);
 
-        if (conversation) return conversation;
+            if (conversation) return conversation;
 
-        const recipient = await this.userService.findUser({ id: recipientId });
+            const recipient = await this.userService.findUser({ id: recipientId });
 
-        if (!recipient) {
-            throw new HttpException('Recipient Not Found', HttpStatus.NOT_FOUND);
+            if (!recipient) {
+                throw new HttpException('Recipient Not Found', HttpStatus.NOT_FOUND);
+            }
+
+            const newConversation = await this.conversationService.createConversation(
+                user,
+                {
+                    username: recipient.username,
+                    message: 'hello',
+                },
+            );
+
+            this.events.emit('conversation.create', newConversation);
+            return newConversation;
+        } catch (error) {
+            this.logger.error(`Error in checkConversationExists: ${error.message}`, error.stack, 'ExistsController');
+            throw error;
         }
-
-        const newConversation = await this.conversationService.createConversation(
-            user,
-            {
-                username: recipient.username,
-                message: 'hello',
-            },
-        );
-
-        this.events.emit('conversation.create', newConversation);
-        return newConversation;
     }
 }

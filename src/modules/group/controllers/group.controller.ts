@@ -1,5 +1,4 @@
-
-import { Body, Controller, Get, Inject, Param, ParseIntPipe, Patch, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Inject, Param, ParseIntPipe, Patch, Post, UploadedFile, UseGuards, UseInterceptors, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTagConfigs, Routes, Services } from 'src/common/utils/constrants';
@@ -20,52 +19,93 @@ import { Roles } from 'src/common/decorators/role.decorator';
 @Roles()
 @Controller(Routes.GROUP)
 export class GroupController {
-  constructor(
-    @Inject(Services.GROUP) private readonly groupService: IGroupService,
-    private eventEmitter: EventEmitter2,
-  ) {}
+	constructor(
+		@Inject(Services.GROUP) private readonly groupService: IGroupService,
+		private readonly eventEmitter: EventEmitter2,
+		private readonly logger: Logger, 
+	) { }
 
-  @Post()
-  async createGroup(@GetUser() user: User, @Body() payload: CreateGroupDto) {
-    const group = await this.groupService.createGroup({
-      ...payload,
-      creator: user,
-    });
-    this.eventEmitter.emit('group.create', group);
-    return group;
-  }
+	@Post()
+	async createGroup(@GetUser() user: User, @Body() payload: CreateGroupDto) {
+		try {
+			const group = await this.groupService.createGroup({
+				...payload,
+				creator: user,
+			});
+			this.eventEmitter.emit('group.create', group);
+			return group;
+		} catch (error) {
+			if (error instanceof HttpException) {
+				throw error;
+			}
+			this.logger.error(`Error in create group: ${error.message}`, error.stack, 'GroupController');
+			throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
 
-  @Get()
-  getGroups(@GetUser() user: User) {
-    return this.groupService.getGroups({ userId: user.id });
-  }
+	@Get()
+	getGroups(@GetUser() user: User) {
+		try {
+			return this.groupService.getGroups({ userId: user.id });
+		} catch (error) {
+			if (error instanceof HttpException) {
+				throw error;
+			}
+			this.logger.error(`Error in get groups: ${error.message}`, error.stack, 'GroupController');
+			throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
 
-  @Get(':id')
-  getGroup(@GetUser() user: User, @Param('id') id: number) {
-    return this.groupService.findGroupById(id);
-  }
+	@Get(':id')
+	getGroup(@GetUser() user: User, @Param('id') id: number) {
+		try {
+			return this.groupService.findGroupById(id);
+		} catch (error) {
+			if (error instanceof HttpException) {
+				throw error;
+			}
+			this.logger.error(`Error in get group: ${error.message}`, error.stack, 'GroupController');
+			throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
 
-  @Patch(':id/owner')
-  async updateGroupOwner(
-    @GetUser() { id: userId }: User,
-    @Param('id') groupId: number,
-    @Body() { newOwnerId }: TransferOwnerDto,
-  ) {
-    const params = { userId, groupId, newOwnerId };
-    const group = await this.groupService.transferGroupOwner(params);
-    this.eventEmitter.emit('group.owner.update', group);
-    return group;
-  }
+	@Patch(':id/owner')
+	async updateGroupOwner(
+		@GetUser() { id: userId }: User,
+		@Param('id') groupId: number,
+		@Body() { newOwnerId }: TransferOwnerDto,
+	) {
+		try {
+			const params = { userId, groupId, newOwnerId };
+			const group = await this.groupService.transferGroupOwner(params);
+			this.eventEmitter.emit('group.owner.update', group);
+			return group;
+		} catch (error) {
+			if (error instanceof HttpException) {
+				throw error;
+			}
+			this.logger.error(`Error in update group owner: ${error.message}`, error.stack, 'GroupController');
+			throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
 
-  @Patch(':id/details')
-  @UseInterceptors(FileInterceptor('avatar'))
-  async updateGroupDetails(
-    @Body() { title }: UpdateGroupDetailsDto,
-    @Param('id', ParseIntPipe) id: number,
-    @UploadedFile() avatar: Attachment,
-  ) {
-    console.log(avatar);
-    console.log(title);
-    return this.groupService.updateDetails({ id, avatar, title });
-  }
+	@Patch(':id/details')
+	@UseInterceptors(FileInterceptor('avatar'))
+	async updateGroupDetails(
+		@Body() { title }: UpdateGroupDetailsDto,
+		@Param('id', ParseIntPipe) id: number,
+		@UploadedFile() avatar: Attachment,
+	) {
+		try {
+			console.log(avatar);
+			console.log(title);
+			return this.groupService.updateDetails({ id, avatar, title });
+		} catch (error) {
+			if (error instanceof HttpException) {
+				throw error;
+			}
+			this.logger.error(`Error in update group details: ${error.message}`, error.stack, 'GroupController');
+			throw new HttpException('Internal server error', HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
 }

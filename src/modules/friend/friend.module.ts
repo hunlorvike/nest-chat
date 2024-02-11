@@ -2,7 +2,7 @@
 https://docs.nestjs.com/modules
 */
 
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Friend } from './entities/friend.entity';
 import { FriendsController } from './controllers/friend.controller';
@@ -23,6 +23,7 @@ import { Role } from '../user/entities/role.entity';
     ],
     controllers: [FriendsController],
     providers: [
+        Logger,
         {
             provide: Services.FRIEND_SERVICE,
             useClass: FriendService

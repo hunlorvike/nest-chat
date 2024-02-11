@@ -7,7 +7,7 @@ import { MessageAttachmentModule } from './modules/message-attachment/message-at
 import { MessageModule } from './modules/message/message.module';
 import { FriendModule } from './modules/friend/friend.module';
 import { ConversationModule } from './modules/conversations/conversation.module';
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
@@ -23,6 +23,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { FriendRequestModule } from './modules/friend-request/friend-request.module';
 import { AuthService } from './modules/auth/services/impl/auth.service';
+import { ThrottlerBehindProxyGuard } from './common/utils/throttler';
 
 dotenv.config();
 
@@ -55,10 +56,11 @@ dotenv.config();
 		EventEmitterModule.forRoot(),
 	],
 	providers: [
+		Logger,
 		SeederService,
 		{
 			provide: Services.THROTTLER_GUARD,
-			useClass: ThrottlerGuard
+			useClass: ThrottlerBehindProxyGuard
 		},
 		{
 			provide: Services.AUTH,
