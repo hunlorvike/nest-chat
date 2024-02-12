@@ -60,6 +60,15 @@ export enum ServerEvents {
     FRIEND_REMOVED = 'friend.removed',
 }
 
+export enum WebsocketEvents {
+    FRIEND_REQUEST_ACCEPTED = 'onFriendRequestAccepted',
+    FRIEND_REQUEST_REJECTED = 'onFriendRequestRejected',
+    VIDEO_CALL_REJECTED = 'onVideoCallRejected',
+    VOICE_CALL_ACCEPTED = 'onVoiceCallAccepted',
+    VOICE_CALL_HANG_UP = 'onVoiceCallHangUp',
+    VOICE_CALL_REJECTED = 'onVoiceCallRejected',
+}
+
 export const SUBFOLDER_IMAGES = 'images';
 export const SUBFOLDER_MESSAGE_ATTACHMENTS = 'message_attachments';
 export const SUBFOLDER_GROUP_MESSAGE_ATTACHMENTS = 'group_message_attachments';
