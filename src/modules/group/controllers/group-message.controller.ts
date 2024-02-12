@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, HttpException, HttpStatus, Inject, Param, ParseIntPipe, Patch, Post, UploadedFiles, UseGuards, UseInterceptors, Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { SkipThrottle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { ApiTagConfigs, Routes, Services } from 'src/common/utils/constrants';
 import { Attachment } from 'src/common/utils/types';
 import { CreateMessageDto } from 'src/modules/message/dtos/create-message.dto';
@@ -23,9 +23,10 @@ export class GroupMessageController {
         @Inject(Services.GROUP_MESSAGE)
         private readonly groupMessageService: IGroupMessageService,
         private readonly eventEmitter: EventEmitter2,
-        private readonly logger: Logger, 
+        private readonly logger: Logger,
     ) { }
 
+    @Throttle({ default: { limit: 5, ttl: 10 } })
     @UseInterceptors(
         FileFieldsInterceptor([
             {

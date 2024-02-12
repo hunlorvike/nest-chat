@@ -11,6 +11,7 @@ import { GetUser } from 'src/common/decorators/get-user.decorator';
 import { ApiBadRequestResponse, ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtGuard } from 'src/common/guards/jwt.guard';
 import { Roles } from 'src/common/decorators/role.decorator';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 
 @ApiTags(ApiTagConfigs.MESSAGE)
 @ApiBearerAuth()
@@ -21,9 +22,10 @@ export class MessageController {
     constructor(
         @Inject(Services.MESSAGE) private readonly messageService: IMessageService,
         private eventEmitter: EventEmitter2,
-        private readonly logger: Logger, 
+        private readonly logger: Logger,
     ) { }
 
+    @Throttle({ default: { limit: 5, ttl: 10 } })
     @ApiOperation({ summary: 'Create a new message' })
     @ApiBadRequestResponse({ description: 'Attachments and content are empty' })
     @UseInterceptors(
@@ -34,7 +36,6 @@ export class MessageController {
             },
         ]),
     )
-
     @Post()
     async createMessage(
         @GetUser() user: User,
@@ -61,6 +62,7 @@ export class MessageController {
         }
     }
 
+    @SkipThrottle()
     @Get()
     async getMessagesFromConversation(
         @GetUser() user: User,
