@@ -9,7 +9,7 @@ import { EditMessageDto } from 'src/modules/message/dtos/edit-message.dto';
 import { User } from 'src/modules/user/entities/user.entity';
 import { IGroupMessageService } from '../services/interface-group-message.service';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiBadRequestResponse, ApiConsumes, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { JwtGuard } from 'src/common/guards/jwt.guard';
 import { Roles } from 'src/common/decorators/role.decorator';
 
@@ -27,6 +27,12 @@ export class GroupMessageController {
     ) { }
 
     @Throttle({ default: { limit: 5, ttl: 10 } })
+    @ApiOperation({ summary: 'Create a new group message' })
+    @ApiConsumes('multipart/form-data')
+    @ApiBadRequestResponse({ description: 'Empty message' })
+    @ApiParam({ name: 'id', description: 'Group ID', type: 'number' })
+    @ApiResponse({ status: 200, description: 'Successfully created group message' })
+    @ApiResponse({ status: 400, description: 'Bad request' })
     @UseInterceptors(
         FileFieldsInterceptor([
             {
@@ -35,7 +41,6 @@ export class GroupMessageController {
             },
         ]),
     )
-    @Post()
     async createGroupMessage(
         @GetUser() user: User,
         @UploadedFiles() { attachments }: { attachments: Attachment[] },
@@ -62,8 +67,12 @@ export class GroupMessageController {
         }
     }
 
-    @Get()
+    @Get(':id')
     @SkipThrottle()
+    @ApiOperation({ summary: 'Get group messages' })
+    @ApiParam({ name: 'id', description: 'Group ID', type: 'number' })
+    @ApiResponse({ status: 200, description: 'Successfully retrieved group messages' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
     async getGroupMessages(
         @GetUser() user: User,
         @Param('id', ParseIntPipe) id: number,
@@ -80,6 +89,11 @@ export class GroupMessageController {
 
     @Delete(':messageId')
     @SkipThrottle()
+    @ApiOperation({ summary: 'Delete a group message' })
+    @ApiParam({ name: 'id', description: 'Group ID', type: 'number' })
+    @ApiParam({ name: 'messageId', description: 'Message ID', type: 'number' })
+    @ApiResponse({ status: 200, description: 'Successfully deleted group message' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
     async deleteGroupMessage(
         @GetUser() user: User,
         @Param('id', ParseIntPipe) groupId: number,
@@ -105,6 +119,11 @@ export class GroupMessageController {
 
     @Patch(':messageId')
     @SkipThrottle()
+    @ApiOperation({ summary: 'Edit a group message' })
+    @ApiParam({ name: 'id', description: 'Group ID', type: 'number' })
+    @ApiParam({ name: 'messageId', description: 'Message ID', type: 'number' })
+    @ApiResponse({ status: 200, description: 'Successfully edited group message' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
     async editGroupMessage(
         @GetUser() { id: userId }: User,
         @Param('id', ParseIntPipe) groupId: number,

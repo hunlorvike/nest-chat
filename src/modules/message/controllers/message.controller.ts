@@ -8,7 +8,7 @@ import { CreateMessageDto } from '../dtos/create-message.dto';
 import { EditMessageDto } from '../dtos/edit-message.dto';
 import { IMessageService } from '../services/interface-message.service';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
-import { ApiBadRequestResponse, ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiBadRequestResponse, ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtGuard } from 'src/common/guards/jwt.guard';
 import { Roles } from 'src/common/decorators/role.decorator';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
@@ -27,6 +27,7 @@ export class MessageController {
 
     @Throttle({ default: { limit: 5, ttl: 10 } })
     @ApiOperation({ summary: 'Create a new message' })
+    @ApiConsumes('multipart/form-data')
     @ApiBadRequestResponse({ description: 'Attachments and content are empty' })
     @UseInterceptors(
         FileFieldsInterceptor([
@@ -64,6 +65,9 @@ export class MessageController {
 
     @SkipThrottle()
     @Get()
+    @ApiOperation({ summary: 'Get messages from conversation' })
+    @ApiResponse({ status: 200, description: 'Successfully retrieved messages' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
     async getMessagesFromConversation(
         @GetUser() user: User,
         @Param('id', ParseIntPipe) id: number,
@@ -80,6 +84,9 @@ export class MessageController {
     }
 
     @Patch(':messageId')
+    @ApiOperation({ summary: 'Edit a message' })
+    @ApiResponse({ status: 200, description: 'Successfully edited message' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
     async editMessage(
         @GetUser() { id: userId }: User,
         @Param('id') conversationId: number,
@@ -97,8 +104,10 @@ export class MessageController {
         }
     }
 
-
     @Delete(':messageId')
+    @ApiOperation({ summary: 'Delete a message from conversation' })
+    @ApiResponse({ status: 200, description: 'Successfully deleted message' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
     async deleteMessageFromConversation(
         @GetUser() user: User,
         @Param('id', ParseIntPipe) conversationId: number,

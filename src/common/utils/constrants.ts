@@ -48,7 +48,9 @@ export enum ApiTagConfigs {
     EXISTS = 'Exists',
     GROUP = 'Group',
     GROUP_MESSAGE = 'Group Message',
-    GROUP_RECIPIENT = 'Group Recipient'
+    GROUP_RECIPIENT = 'Group Recipient',
+    USER_PRESENCE = 'User Presence',
+    USER_PROFILE = 'User Profile',
 }
 
 export enum ServerEvents {

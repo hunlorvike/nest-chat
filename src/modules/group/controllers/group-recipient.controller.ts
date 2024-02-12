@@ -5,9 +5,10 @@ import { User } from 'src/modules/user/entities/user.entity';
 import { AddGroupRecipientDto } from '../dtos/add-group-recipient.dto';
 import { IGroupRecipientService } from '../services/interface-group-recipient.service';
 import { GetUser } from 'src/common/decorators/get-user.decorator';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { JwtGuard } from 'src/common/guards/jwt.guard';
 import { Roles } from 'src/common/decorators/role.decorator';
+import { Group } from '../entities/group.entity';
 
 @ApiTags(ApiTagConfigs.GROUP_RECIPIENT)
 @ApiBearerAuth()
@@ -19,10 +20,15 @@ export class GroupRecipientController {
         @Inject(Services.GROUP_RECIPIENT)
         private readonly groupRecipientService: IGroupRecipientService,
         private readonly eventEmitter: EventEmitter2,
-        private readonly logger: Logger, 
+        private readonly logger: Logger,
     ) { }
 
-    @Post()
+    @ApiOperation({ summary: 'Add a user to a group' })
+    @ApiParam({ name: 'id', description: 'Group ID', type: 'number' })
+    @ApiResponse({ status: 200, description: 'Successfully added group recipient', type: Group })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
+    @Post(':id')
     async addGroupRecipient(
         @GetUser() { id: userId }: User,
         @Param('id', ParseIntPipe) id: number,
@@ -42,7 +48,12 @@ export class GroupRecipientController {
         }
     }
 
-    @Delete('leave')
+    @ApiOperation({ summary: 'Leave a group' })
+    @ApiParam({ name: 'id', description: 'Group ID', type: 'number' })
+    @ApiResponse({ status: 200, description: 'Successfully left the group', type: Group })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
+    @Delete('leave/:id')
     async leaveGroup(
         @GetUser() user: User,
         @Param('id', ParseIntPipe) groupId: number,
@@ -63,7 +74,13 @@ export class GroupRecipientController {
         }
     }
 
-    @Delete(':userId')
+    @ApiOperation({ summary: 'Remove a user from a group' })
+    @ApiParam({ name: 'id', description: 'Group ID', type: 'number' })
+    @ApiParam({ name: 'userId', description: 'User ID to be removed', type: 'number' })
+    @ApiResponse({ status: 200, description: 'Successfully removed group recipient', type: Group })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
+    @Delete(':id/:userId')
     async removeGroupRecipient(
         @GetUser() { id: issuerId }: User,
         @Param('id', ParseIntPipe) id: number,

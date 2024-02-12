@@ -9,9 +9,10 @@ import { GetUser } from 'src/common/decorators/get-user.decorator';
 import { CreateGroupDto } from '../dtos/create-group.dto';
 import { TransferOwnerDto } from '../dtos/transfer-owner.dto';
 import { UpdateGroupDetailsDto } from '../dtos/update-group-detail';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiConsumes, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { JwtGuard } from 'src/common/guards/jwt.guard';
 import { Roles } from 'src/common/decorators/role.decorator';
+import { Group } from '../entities/group.entity';
 
 @ApiTags(ApiTagConfigs.GROUP)
 @ApiBearerAuth()
@@ -22,9 +23,14 @@ export class GroupController {
 	constructor(
 		@Inject(Services.GROUP) private readonly groupService: IGroupService,
 		private readonly eventEmitter: EventEmitter2,
-		private readonly logger: Logger, 
+		private readonly logger: Logger,
 	) { }
 
+	@ApiOperation({ summary: 'Create a new group' })
+	@ApiConsumes('application/json')
+	@ApiResponse({ status: 200, description: 'Successfully created group', type: Group })
+	@ApiResponse({ status: 400, description: 'Bad request' })
+	@ApiResponse({ status: 500, description: 'Internal server error' })
 	@Post()
 	async createGroup(@GetUser() user: User, @Body() payload: CreateGroupDto) {
 		try {
@@ -43,6 +49,10 @@ export class GroupController {
 		}
 	}
 
+	@ApiOperation({ summary: 'Get user groups' })
+	@ApiResponse({ status: 200, description: 'Successfully retrieved user groups', type: [Group] })
+	@ApiResponse({ status: 400, description: 'Bad request' })
+	@ApiResponse({ status: 500, description: 'Internal server error' })
 	@Get()
 	getGroups(@GetUser() user: User) {
 		try {
@@ -56,6 +66,11 @@ export class GroupController {
 		}
 	}
 
+	@ApiOperation({ summary: 'Get group by ID' })
+	@ApiParam({ name: 'id', description: 'Group ID', type: 'number' })
+	@ApiResponse({ status: 200, description: 'Successfully retrieved group', type: Group })
+	@ApiResponse({ status: 400, description: 'Bad request' })
+	@ApiResponse({ status: 500, description: 'Internal server error' })
 	@Get(':id')
 	getGroup(@GetUser() user: User, @Param('id') id: number) {
 		try {
@@ -69,6 +84,11 @@ export class GroupController {
 		}
 	}
 
+	@ApiOperation({ summary: 'Update group owner' })
+	@ApiParam({ name: 'id', description: 'Group ID', type: 'number' })
+	@ApiResponse({ status: 200, description: 'Successfully updated group owner', type: Group })
+	@ApiResponse({ status: 400, description: 'Bad request' })
+	@ApiResponse({ status: 500, description: 'Internal server error' })
 	@Patch(':id/owner')
 	async updateGroupOwner(
 		@GetUser() { id: userId }: User,
@@ -89,6 +109,11 @@ export class GroupController {
 		}
 	}
 
+	@ApiOperation({ summary: 'Update group details' })
+	@ApiParam({ name: 'id', description: 'Group ID', type: 'number' })
+	@ApiResponse({ status: 200, description: 'Successfully updated group details', type: Group })
+	@ApiResponse({ status: 400, description: 'Bad request' })
+	@ApiResponse({ status: 500, description: 'Internal server error' })
 	@Patch(':id/details')
 	@UseInterceptors(FileInterceptor('avatar'))
 	async updateGroupDetails(

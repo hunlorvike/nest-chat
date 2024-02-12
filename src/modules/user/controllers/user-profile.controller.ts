@@ -1,22 +1,33 @@
-import { Controller, Inject, Patch, UseInterceptors, UploadedFiles, Body, HttpException, HttpStatus, Logger } from "@nestjs/common";
+import { Controller, Inject, Patch, UseInterceptors, UploadedFiles, Body, HttpException, HttpStatus, Logger, UseGuards } from "@nestjs/common";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
-import { Routes, Services, UserProfileFileFields } from "src/common/utils/constrants";
+import { ApiTags, ApiBearerAuth, ApiConsumes, ApiResponse, ApiOperation } from "@nestjs/swagger";
+import { Roles } from "src/common/decorators/role.decorator";
+import { Services, Routes, ApiTagConfigs, UserProfileFileFields } from "src/common/utils/constrants";
 import { UserProfileFiles, UpdateUserProfileParams } from "src/common/utils/types";
 import { UpdateUserProfileDto } from "../dtos/update-user-profile.dto";
 import { User } from "../entities/user.entity";
 import { IUserProfile } from "../services/interface-user-profile.service";
 import { GetUser } from "src/common/decorators/get-user.decorator";
+import { JwtGuard } from "src/common/guards/jwt.guard";
 
+@ApiTags(ApiTagConfigs.USER_PROFILE)
+@ApiBearerAuth()
+@UseGuards(JwtGuard)
+@Roles()
 @Controller(Routes.USER_PROFILE)
 export class UserProfilesController {
-    private readonly logger = new Logger(UserProfilesController.name);
 
     constructor(
         @Inject(Services.USERS_PROFILE)
         private readonly userProfileService: IUserProfile,
+        private logger: Logger
     ) { }
 
     @Patch()
+    @ApiOperation({ summary: 'Update user profile', description: 'Endpoint to update user profile' })
+    @ApiConsumes('multipart/form-data')
+    @ApiResponse({ status: 200, description: 'Successfully updated user profile' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
     @UseInterceptors(FileFieldsInterceptor(UserProfileFileFields))
     async updateUserProfile(
         @GetUser() user: User,

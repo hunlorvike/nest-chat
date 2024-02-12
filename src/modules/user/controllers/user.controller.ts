@@ -1,7 +1,15 @@
-import { Controller, Inject, Get, Query, HttpException, HttpStatus, Logger } from "@nestjs/common";
-import { Routes, Services } from "src/common/utils/constrants";
+import { Controller, Inject, Get, Query, HttpException, HttpStatus, Logger, UseGuards } from "@nestjs/common";
+import { ApiTags, ApiBearerAuth, ApiResponse, ApiOperation, ApiQuery } from "@nestjs/swagger";
+import { Roles } from "src/common/decorators/role.decorator";
+import { Services, Routes, ApiTagConfigs } from "src/common/utils/constrants";
 import { IUserService } from "../services/interface-user.service";
+import { JwtGuard } from "src/common/guards/jwt.guard";
+import { UserProfileDto } from "../dtos/user-profile.dto";
 
+@ApiTags(ApiTagConfigs.USER)
+@ApiBearerAuth()
+@UseGuards(JwtGuard)
+@Roles()
 @Controller(Routes.USER)
 export class UserController {
     constructor(
@@ -10,6 +18,11 @@ export class UserController {
     ) { }
 
     @Get('search')
+    @ApiOperation({ summary: 'Search users', description: 'Endpoint to search for users' })
+    @ApiQuery({ name: 'query', description: 'Search query', required: true })
+    @ApiResponse({ status: 200, description: 'Successfully retrieved search results' })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
     async searchUsers(@Query('query') query: string) {
         try {
             console.log(query);
@@ -24,6 +37,12 @@ export class UserController {
     }
 
     @Get('check')
+    @ApiOperation({ summary: 'Check username availability', description: 'Endpoint to check if a username is available' })
+    @ApiQuery({ name: 'username', description: 'Username to check', required: true })
+    @ApiResponse({ status: 200, description: 'Username is available' })
+    @ApiResponse({ status: 400, description: 'Bad request' })
+    @ApiResponse({ status: 409, description: 'Username already exists' })
+    @ApiResponse({ status: 500, description: 'Internal server error' })
     async checkUsername(@Query('username') username: string) {
         try {
             if (!username) {
