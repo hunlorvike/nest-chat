@@ -24,12 +24,18 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { FriendRequestModule } from './modules/friend-request/friend-request.module';
 import { AuthService } from './modules/auth/services/impl/auth.service';
 import { ThrottlerBehindProxyGuard } from './common/utils/throttler';
+import { PassportModule } from '@nestjs/passport';
+import { GatewayModule } from './modules/gateway/gateway.module';
+import { EventModule } from './modules/event/event.module';
 
 dotenv.config();
 
 
 @Module({
 	imports: [
+		// Các module NestJS
+		GatewayModule,
+		EventModule,
 		GroupModule,
 		ExistsModule,
 		ImageStoreModule,
@@ -40,9 +46,11 @@ dotenv.config();
 		ConversationModule,
 		UserModule,
 		AuthModule,
+		// Các module thư viện và cấu hình
 		ConfigModule.forRoot({ envFilePath: '.env' }),
 		TypeOrmModule.forRoot(dataSourceOptions),
 		TypeOrmModule.forFeature([User, Role]),
+		PassportModule.register({ defaultStrategy: 'jwt' }),
 		JwtModule,
 		ThrottlerModule.forRoot({
 			throttlers: [
@@ -51,7 +59,7 @@ dotenv.config();
 					limit: 10,
 					ttl: 60,
 				},
-			]
+			],
 		}),
 		EventEmitterModule.forRoot(),
 	],
